@@ -1,0 +1,173 @@
+#!/usr/bin/ansible-playbook
+#
+# Ensure the roles are downloaded using the requirements.yml:
+#   ansible-galaxy install -r roles/requirements.yml # -p ./roles/
+#
+# Make sure your account on each inventory has this users ssh key
+#   ssh-copy-id -i ~/.ssh/id_ed25519.pub ${USER}@[target]
+#
+# Then run like this:
+#   ./main.yml -i inventory.ini
+#
+---
+- hosts: base_hosts
+  gather_facts: true
+
+  vars:
+    ansible_become_password: "Four Score & 7 years ago..."
+
+  tasks:
+  - name: Setup hostname
+    include_role:
+      name: fqdn
+      apply:
+        become: true
+    vars:
+      fqdn: "{{ inventory_hostname }}"
+      hostname: "{{ inventory_hostname_short }}"
+
+# Add sane programs
+  - name: Setup commonly handy packages on Linux
+    become: true
+    package:
+      state: latest
+      name:
+      - tmux
+      - vim
+      - ansible
+      - nmap
+      - git
+      - cockpit
+      - sos-collector
+    when: ansible_os_family == 'RedHat'
+    notify: do_reboot
+
+  - name: Setup commonly handy packages on RedHat
+    become: true
+    package:
+      state: latest
+      name:
+      - nc
+      - sos-collector
+    when: ansible_os_family == 'RedHat'
+    notify: do_reboot
+
+  - name: Setup commonly handy packages on Debian
+    become: true
+    package:
+      state: latest
+      name:
+      - netcat
+      - firewalld
+    when: ansible_os_family == 'Debian'
+    notify: do_reboot
+
+# Setup Cockpit on RedHat systems
+  - name: Setup cockpit packages - RedHat
+    become: true
+    package:
+      state: latest
+      name:
+      - cockpit-composer
+      - cockpit-podman
+      - cockpit-machines
+      - cockpit-pcp
+    when: ansible_os_family == 'RedHat'
+    notify: do_reboot
+
+# Setup for virtual machine work
+  - name: Setup KVM and plugins
+    become: true
+    package:
+      state: latest
+      name:
+      - qemu-kvm
+      - libvirt
+      - libvirt-python
+      - libguestfs-tools
+      - virt-install
+    when: ansible_os_family == 'RedHat'
+    notify: do_reboot
+
+  - name: Setup KVM and plugins
+    become: true
+    package:
+      state: latest
+      name:
+      - qemu-kvm
+      - libvirt-daemon-system
+      - python-libvirt
+      - libguestfs-tools
+      - virtinst
+    when: ansible_os_family == 'Debian'
+    notify: do_reboot
+
+  - name: Enable and start SSH services
+    become: true
+    service:
+      enabled: yes
+      state: started
+      name: sshd.service
+
+  - name: Enable and start Cockpit services
+    become: true
+    service:
+      enabled: yes
+      state: started
+      name: "{{ item }}"
+    with_items:
+      - cockpit.socket
+      - cockpit
+    when: ansible_os_family == 'RedHat'
+
+  - name: Enable and start KVM services
+    become: true
+    service:
+      enabled: yes
+      state: started
+      name: libvirtd
+
+# Setup for podman work
+  - name: Setup podman and cockpit plugins
+    become: true
+    package:
+      state: latest
+      name:
+        - cockpit-podman
+        - podman-manpages
+        - podman-tests
+        - pcp-pmda-podman
+    notify: do_reboot
+
+# Setup for image building
+  - name: Install Image Builder and cockpit plugins
+    become: true
+    package:
+      state: latest
+      name:
+      - lorax-composer
+      - composer-cli
+      - bash-completion
+    when: ansible_os_family == 'RedHat'
+    notify: do_reboot
+
+  - name: Enable and start services
+    become: true
+    service:
+      enabled: yes
+      state: started
+      name: lorax-composer.socket
+    when: ansible_os_family == 'RedHat'
+
+  - name: Update all packages
+    become: true
+    package:
+      name: "*"
+      state: latest
+    notify: do_reboot
+
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+

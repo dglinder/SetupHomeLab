@@ -1,0 +1,4 @@
+---
+
+- src: https://github.com/holms/ansible-fqdn.git
+  name: fqdn
