@@ -6,10 +6,17 @@
 # Make sure your account on each inventory has this users ssh key
 #   ssh-copy-id -i ~/.ssh/id_ed25519.pub ${USER}@[target]
 #
+# Add/updte the sudo password in the password.yml file
+#   # Create a blank file if necessary: echo "" >> password.yml
+#   ansible-vault edit password.yml
+#   # Enter the vault password to use for this file
+#   # Add and/or correct the "" variable.
+#   ansible_become_password: "MyPasswordHere"
+#
 # Then run like this:
-#   ./main.yml -i inventory.ini
+#   ./main.yml -i inventory.ini --extra-vars '@password.yml' --ask-vault-pass
 # Or
-#   script setup-$(date +%y%m%d-%H%M%S).out -c ./main.yml
+#   script setup-$(date +%y%m%d-%H%M%S).out -c "./main.yml --extra-vars '@password.yml' --ask-vault-pass"
 #
 ---
 - hosts: all
@@ -161,6 +168,10 @@
         - podman-tests
         - pcp-pmda-podman
     notify: do_reboot
+    when:
+    - ( ansible_os_family == 'RedHat' and ansible_distribution_major_version|int >= 8  ) or
+      ( ansible_os_family == 'Fedora' and ansible_distribution_major_version|int >= 30 )
+
 
   - name: Enable and start podman services
     become: true
