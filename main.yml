@@ -7,16 +7,20 @@
 #   ssh-copy-id -i ~/.ssh/id_ed25519.pub ${USER}@[target]
 #
 # Add/updte the sudo password in the password.yml file
-#   # Create a blank file if necessary: echo "" >> password.yml
+#   ansible-vault create password.yml
+#   # Enter new vault password for this file
 #   ansible-vault edit password.yml
-#   # Enter the vault password to use for this file
+#   # Enter the vault password used for this file
 #   # Add and/or correct the "" variable.
 #   ansible_become_password: "MyPasswordHere"
 #
+# Store that vault password int he "vault_password" file
+#   NOTE: Do NOT check this file into a repo
+#
 # Then run like this:
-#   ./main.yml -i inventory.ini --extra-vars '@password.yml' --ask-vault-pass
+#   ./main.yml -i inventory.ini --extra-vars '@password.yml' --vault-password-file=vault_password
 # Or
-#   script setup-$(date +%y%m%d-%H%M%S).out -c "./main.yml --extra-vars '@password.yml' --ask-vault-pass"
+#   script setup-$(date +%y%m%d-%H%M%S).out -c "./main.yml --extra-vars '@password.yml' --vault-password-file=vault_password"
 #
 ---
 - hosts: all
