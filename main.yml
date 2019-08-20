@@ -57,9 +57,6 @@
 - hosts: base_hosts
   gather_facts: true
 
-  vars:
-    ansible_become_password: "Four Score & 7 years ago..."
-
   tasks:
 #  - name: Setup hostname
 #    include_role:
@@ -201,9 +198,6 @@
 - hosts: workstations
   gather_facts: true
 
-  vars:
-    ansible_become_password: "Four Score & 7 years ago..."
-
   tasks:
   # Setup X11 on Wayland systems
   # https://docs.fedoraproject.org/en-US/quick-docs/configuring-xorg-as-default-gnome-session/
@@ -256,9 +250,6 @@
 
 - hosts: all
   gather_facts: true
-
-  vars:
-    ansible_become_password: "Four Score & 7 years ago..."
 
   tasks:
   - name: Update all packages
