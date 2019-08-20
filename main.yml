@@ -8,9 +8,11 @@
 #
 # Then run like this:
 #   ./main.yml -i inventory.ini
+# Or
+#   script setup-$(date +%y%m%d-%H%M%S).out -c ./main.yml
 #
 ---
-- hosts: base_hosts
+- hosts: all
   gather_facts: true
 
   vars:
@@ -26,7 +28,14 @@
       fqdn: "{{ inventory_hostname }}"
       hostname: "{{ inventory_hostname_short }}"
 
-# Add sane programs
+  - name: Setup automatic updates
+    become: true
+    package:
+      state: latest
+      name:
+      - dnf-automatic
+
+# Add handy programs
   - name: Setup commonly handy packages on Linux
     become: true
     package:
@@ -39,28 +48,30 @@
       - git
       - cockpit
       - sos-collector
-    when: ansible_os_family == 'RedHat'
-    notify: do_reboot
-
-  - name: Setup commonly handy packages on RedHat
-    become: true
-    package:
-      state: latest
-      name:
       - nc
-      - sos-collector
     when: ansible_os_family == 'RedHat'
     notify: do_reboot
 
-  - name: Setup commonly handy packages on Debian
+  handlers:
+  - name: do_reboot
     become: true
-    package:
-      state: latest
-      name:
-      - netcat
-      - firewalld
-    when: ansible_os_family == 'Debian'
-    notify: do_reboot
+    reboot:
+
+- hosts: base_hosts
+  gather_facts: true
+
+  vars:
+    ansible_become_password: "Four Score & 7 years ago..."
+
+  tasks:
+#  - name: Setup hostname
+#    include_role:
+#      name: fqdn
+#      apply:
+#        become: true
+#    vars:
+#      fqdn: "{{ inventory_hostname }}"
+#      hostname: "{{ inventory_hostname_short }}"
 
 # Setup Cockpit on RedHat systems
   - name: Setup cockpit packages - RedHat
@@ -69,10 +80,29 @@
       state: latest
       name:
       - cockpit-composer
-      - cockpit-podman
       - cockpit-machines
       - cockpit-pcp
     when: ansible_os_family == 'RedHat'
+    notify: do_reboot
+
+  - name: Setup cockpit packages - RedHat 8+ and Fedora
+    become: true
+    package:
+      state: latest
+      name:
+      - podman
+    when:
+    - ansible_os_family == 'RedHat' and ansible_distribution_major_version >= 7
+    notify: do_reboot
+
+  - name: Setup cockpit packages - Fedora
+    become: true
+    package:
+      state: latest
+      name:
+      - cockpit-podman
+    when:
+    - ansible_distribution == 'Fedora' and ansible_distribution_major_version >= 30
     notify: do_reboot
 
 # Setup for virtual machine work
@@ -139,6 +169,14 @@
         - pcp-pmda-podman
     notify: do_reboot
 
+  - name: Enable and start podman services
+    become: true
+    service:
+      enabled: yes
+      state: started
+      name: io.podman
+    when: ansible_os_family == 'RedHat'
+
 # Setup for image building
   - name: Install Image Builder and cockpit plugins
     become: true
@@ -159,6 +197,74 @@
       name: lorax-composer.socket
     when: ansible_os_family == 'RedHat'
 
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+
+- hosts: workstations
+  gather_facts: true
+
+  vars:
+    ansible_become_password: "Four Score & 7 years ago..."
+
+  tasks:
+  # Setup X11 on Wayland systems
+  # https://docs.fedoraproject.org/en-US/quick-docs/configuring-xorg-as-default-gnome-session/
+  #   /etc/gdm/custom.conf
+  #   Set "WaylandEnable=false"
+  #   In "[daemon]" section, set "DefaultSession=gnome-xorg.desktop"
+
+  - name: Install backgrounds for workstations
+    become: true
+    package:
+      state: latest
+      name:
+      - ffmpeg
+      - gnome-backgrounds
+      - gnome-backgrounds-extras
+      - f21-backgrounds-gnome
+      - f22-backgrounds-gnome
+      - f23-backgrounds-gnome
+      - f24-backgrounds-gnome
+      - f25-backgrounds-gnome
+      - f26-backgrounds-gnome
+      - f27-backgrounds-gnome
+      - f28-backgrounds-gnome
+      - f29-backgrounds-gnome
+      - f30-backgrounds-gnome
+      - f21-backgrounds-extras-gnome
+      - f22-backgrounds-extras-gnome
+      - f23-backgrounds-extras-gnome
+      - f24-backgrounds-extras-gnome
+      - f25-backgrounds-extras-gnome
+      - f26-backgrounds-extras-gnome
+      - f27-backgrounds-extras-gnome
+      - f28-backgrounds-extras-gnome
+      - f29-backgrounds-extras-gnome
+      - f30-backgrounds-extras-gnome
+      - f26-backgrounds-animated
+      - f29-backgrounds-animated
+      - f30-backgrounds-animated
+
+#  - name: Setup handy patching sudoers entry
+#    become: true
+#    lineinfile:
+#      file: /etc/sudoers
+#      line: %wheel localhost=/home/dan/bin/doup -y
+
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+
+- hosts: all
+  gather_facts: true
+
+  vars:
+    ansible_become_password: "Four Score & 7 years ago..."
+
+  tasks:
   - name: Update all packages
     become: true
     package:
@@ -170,4 +276,5 @@
   - name: do_reboot
     become: true
     reboot:
+
 
