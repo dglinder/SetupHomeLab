@@ -15,9 +15,6 @@
 - hosts: all
   gather_facts: true
 
-  vars:
-    ansible_become_password: "Four Score & 7 years ago..."
-
   tasks:
   - name: Setup hostname
     include_role:
@@ -31,7 +28,7 @@
   - name: Setup automatic updates
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - dnf-automatic
 
@@ -39,7 +36,7 @@
   - name: Setup commonly handy packages on Linux
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - tmux
       - vim
@@ -77,7 +74,7 @@
   - name: Setup cockpit packages - RedHat
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - cockpit-composer
       - cockpit-machines
@@ -88,28 +85,28 @@
   - name: Setup cockpit packages - RedHat 8+ and Fedora
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - podman
     when:
-    - ansible_os_family == 'RedHat' and ansible_distribution_major_version >= 7
+    - ansible_os_family == 'RedHat' and ansible_distribution_major_version|int >= 7
     notify: do_reboot
 
   - name: Setup cockpit packages - Fedora
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - cockpit-podman
     when:
-    - ansible_distribution == 'Fedora' and ansible_distribution_major_version >= 30
+    - ansible_distribution == 'Fedora' and ansible_distribution_major_version|int >= 30
     notify: do_reboot
 
 # Setup for virtual machine work
   - name: Setup KVM and plugins
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - qemu-kvm
       - libvirt
@@ -122,7 +119,7 @@
   - name: Setup KVM and plugins
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - qemu-kvm
       - libvirt-daemon-system
@@ -161,9 +158,8 @@
   - name: Setup podman and cockpit plugins
     become: true
     package:
-      state: latest
+      state: installed
       name:
-        - cockpit-podman
         - podman-manpages
         - podman-tests
         - pcp-pmda-podman
@@ -181,7 +177,7 @@
   - name: Install Image Builder and cockpit plugins
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - lorax-composer
       - composer-cli
@@ -218,7 +214,7 @@
   - name: Install backgrounds for workstations
     become: true
     package:
-      state: latest
+      state: installed
       name:
       - ffmpeg
       - gnome-backgrounds
