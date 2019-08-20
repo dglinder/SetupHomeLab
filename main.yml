@@ -23,6 +23,19 @@
   gather_facts: true
 
   tasks:
+  - name: Store user name
+    become: false
+    set_fact:
+            username_on_remote: "{{ ansible_user_id }}"
+
+  - name: Setup passwordless sudo
+    become: true
+    lineinfile:
+      path: /etc/sudoers
+      state: present
+      line: "{{ username_on_remote }} ALL=(ALL) NOPASSWD:ALL"
+      validate: /usr/sbin/visudo -cf %s
+
   - name: Setup hostname
     include_role:
       name: fqdn
