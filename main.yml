@@ -65,11 +65,13 @@
       - tmux
       - vim
       - ansible
+      - ansible-lint
       - nmap
       - git
       - cockpit
       - sos-collector
       - nc
+      - fuse-exfat
     when: ansible_os_family == 'RedHat'
     notify: do_reboot
 
