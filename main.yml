@@ -6,7 +6,7 @@
 # Make sure your account on each inventory has this users ssh key
 #   ssh-copy-id -i ~/.ssh/id_ed25519.pub ${USER}@[target]
 #
-# Add/updte the sudo password in the password.yml file
+# Add/update the sudo password in the password.yml file
 #   ansible-vault create password.yml
 #   # Enter new vault password for this file
 #   ansible-vault edit password.yml
