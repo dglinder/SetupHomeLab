@@ -26,6 +26,9 @@
 - hosts: all
   gather_facts: true
 
+  vars:
+    rebootem: false
+
   tasks:
   - name: Store user name
     become: false
@@ -79,9 +82,13 @@
   - name: do_reboot
     become: true
     reboot:
+    when: rebootem
 
 - hosts: base_hosts
   gather_facts: true
+
+  vars:
+    rebootem: false
 
   tasks:
 #  - name: Setup hostname
@@ -226,9 +233,13 @@
   - name: do_reboot
     become: true
     reboot:
+    when: rebootem
 
 - hosts: workstations
   gather_facts: true
+
+  vars:
+    rebootem: false
 
   tasks:
   # Setup X11 on Wayland systems
@@ -279,6 +290,7 @@
   - name: do_reboot
     become: true
     reboot:
+    when: rebootem
 
 - hosts: all
   gather_facts: true
