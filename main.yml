@@ -9,12 +9,13 @@
 # Add/update the sudo password in the password.yml file
 #   ansible-vault create password.yml
 #   # Enter new vault password for this file
+#   # This will be stored in "vault_password" file later
 #   ansible-vault edit password.yml
 #   # Enter the vault password used for this file
 #   # Add and/or correct the "" variable.
 #   ansible_become_password: "MyPasswordHere"
 #
-# Store that vault password int he "vault_password" file
+# Store that vault password in the "vault_password" file
 #   NOTE: Do NOT check this file into a repo
 #
 # Then run like this:
