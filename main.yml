@@ -34,7 +34,7 @@
   - name: Store user name
     become: false
     set_fact:
-            username_on_remote: "{{ ansible_user_id }}"
+      username_on_remote: "{{ ansible_user_id }}"
 
   - name: Setup passwordless sudo
     become: true
