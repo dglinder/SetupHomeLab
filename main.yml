@@ -71,12 +71,12 @@
       - "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
     register: install_epel
 
-  - name: Ensure RedHat has the server extras repo enabled
+  - name: Ensure RedHat has the additional repositores setup
     become: true
     rhsm_repository:
       name:
-        - rhel-7-server-extras-rpms
-        - rhel-7-server-ansible-2.9-rpms
+        - "rhel-{{ ansible_distribution_major_version }}-server-extras-rpms"
+        - "rhel-{{ ansible_distribution_major_version }}-server-ansible-2.9-rpms"
       state: enabled
     when:
       - ansible_os_family == 'RedHat'
