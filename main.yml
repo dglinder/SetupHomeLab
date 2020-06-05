@@ -28,7 +28,7 @@
   gather_facts: true
 
   vars:
-    rebootem: true
+    rebootem: false
 
   tasks:
   - name: Store user name
@@ -105,7 +105,8 @@
       - nc
       - ansible-lint
       - figlet
-      - python3-pip
+      - rh-python36-PyYAML
+      - rh-python36-python-pip
     when: ansible_os_family == 'RedHat'
     notify: do_reboot
 
@@ -113,12 +114,13 @@
   - name: do_reboot
     become: true
     reboot:
+    when: rebootem
 
 - hosts: base_hosts
   gather_facts: true
 
   vars:
-    rebootem: true
+    rebootem: false
 
   tasks:
 #  - name: Setup hostname
@@ -308,7 +310,7 @@
   gather_facts: true
 
   vars:
-    rebootem: true
+    rebootem: false
 
   tasks:
   # Setup X11 on Wayland systems
@@ -376,5 +378,6 @@
   - name: do_reboot
     become: true
     reboot:
+    when: rebootem
 
 
