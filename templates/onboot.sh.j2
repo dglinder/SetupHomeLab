@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -u
+# Set CPU fan speeds for use in-office every 10 minutes.
+#  From: https://www.reddit.com/r/homelab/comments/aa3xj7/ibm_systemx_3650_m2_fan_speed_control/
+# Install the "ipmitool" package.
+# # ipmitool raw 0x3a 0x07 0x01 0x10 0x01
+#   fields:       A    B    C    D    E
+#     C : 0x01..0x02 = Cooling zone
+#     D : 0x00..0xff = Fan speed
+for X in 0x00 0x01 0x02 ; do 
+  /usr/bin/ipmitool raw 0x3a 0x07 ${X} 0x10 0x01 2>&1 | tee -a /var/tmp/ipmitool.${X}.out
+done
+

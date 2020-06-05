@@ -282,6 +282,22 @@
       name: lorax-composer.socket
     when: ansible_os_family == 'RedHat'
 
+  - name: Setup @reboot script
+    become: true
+    template:
+      src: templates/onboot.sh.j2
+      dest: /usr/local/bin/onboot.sh
+      mode: u=rwx,g=rx,o=rx
+      owner: root
+      group: root
+
+  - name: Setup @reboot cron entry
+    become: true
+    cron:
+      name: "Setup reboot entry"
+      special_time: reboot
+      job: "sleep 120 && /usr/local/bin/onboot.sh"
+
   handlers:
   - name: do_reboot
     become: true
