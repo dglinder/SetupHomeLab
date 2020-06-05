@@ -103,6 +103,7 @@
       - sos-collector
       - nc
       - ansible-lint
+      - figlet
 #      - fuse-exfat
     when: ansible_os_family == 'RedHat'
     notify: do_reboot
