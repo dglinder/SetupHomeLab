@@ -7,7 +7,15 @@ set -u
 #   fields:       A    B    C    D    E
 #     C : 0x01..0x02 = Cooling zone
 #     D : 0x00..0xff = Fan speed
-for X in 0x00 0x01 0x02 ; do 
-  /usr/bin/ipmitool raw 0x3a 0x07 ${X} 0x10 0x01 2>&1 | tee -a /var/tmp/ipmitool.${X}.out
+HOUR=$(date +%H)
+if [[ ${HOUR} -gt 21 || ${HOUR} -lt 8 ]] ; then
+  # Faster/cooler at night
+  SPEED=0x80
+else
+  # Queiter during work hours
+  SPEED=0x20
+fi
+for X in 0x00 0x01 0x02 ; do
+  /usr/bin/ipmitool raw 0x3a 0x07 ${X} ${SPEED} 0x01 > /var/tmp/ipmitool.${X}.out 2>&1
 done
 
