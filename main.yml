@@ -28,7 +28,7 @@
   gather_facts: true
 
   vars:
-    rebootem: false
+    rebootem: true
 
   tasks:
   - name: Store user name
@@ -59,6 +59,35 @@
       state: installed
       name:
       - dnf-automatic
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution_major_version|int >= 8
+
+  - name: Install EPEL
+    become: true
+    package:
+      state: installed
+      name:
+      - "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+    register: install_epel
+
+  - name: Ensure RedHat has the server extras repo enabled
+    become: true
+    rhsm_repository:
+      name:
+        - rhel-7-server-extras-rpms
+        - rhel-7-server-ansible-2.9-rpms
+      state: enabled
+    when:
+      - ansible_os_family == 'RedHat'
+    register: install_repos
+
+  - name: Update repository cache
+    become: true
+    yum:
+      update_cache: yes
+    when:
+      - install_epel is changed or install_repos is changed
 
 # Add handy programs
   - name: Setup commonly handy packages on Linux
@@ -69,13 +98,12 @@
       - tmux
       - vim
       - ansible
-      - ansible-lint
       - nmap
       - git
-      - cockpit
       - sos-collector
       - nc
-      - fuse-exfat
+      - ansible-lint
+#      - fuse-exfat
     when: ansible_os_family == 'RedHat'
     notify: do_reboot
 
@@ -83,13 +111,12 @@
   - name: do_reboot
     become: true
     reboot:
-    when: rebootem
 
 - hosts: base_hosts
   gather_facts: true
 
   vars:
-    rebootem: false
+    rebootem: true
 
   tasks:
 #  - name: Setup hostname
@@ -102,15 +129,32 @@
 #      hostname: "{{ inventory_hostname_short }}"
 
 # Setup Cockpit on RedHat systems
-  - name: Setup cockpit packages - RedHat
+  - name: Setup cockpit packages - RedHat 8
     become: true
     package:
       state: installed
       name:
+      - cockpit
       - cockpit-composer
       - cockpit-machines
       - cockpit-pcp
-    when: ansible_os_family == 'RedHat'
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution_major_version|int == 8
+    notify: do_reboot
+
+  - name: Setup cockpit packages - RedHat 7
+    become: true
+    package:
+      state: installed
+      name:
+      - cockpit
+      - cockpit-system
+      - cockpit-bridge
+      - cockpit-ws
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution_major_version|int == 7
     notify: do_reboot
 
   - name: Setup cockpit packages - RedHat 7+ and Fedora
@@ -120,7 +164,8 @@
       name:
       - podman
     when:
-    - ansible_os_family == 'RedHat' and ansible_distribution_major_version|int >= 7
+    - ansible_os_family == 'RedHat'
+    - ansible_distribution_major_version|int >= 7
     notify: do_reboot
 
   - name: Setup cockpit packages - Fedora
@@ -130,7 +175,8 @@
       name:
       - cockpit-podman
     when:
-    - ansible_distribution == 'Fedora' and ansible_distribution_major_version|int >= 30
+    - ansible_distribution == 'Fedora'
+    - ansible_distribution_major_version|int >= 30
     notify: do_reboot
 
 # Setup for virtual machine work
@@ -144,7 +190,8 @@
       - libvirt-python
       - libguestfs-tools
       - virt-install
-    when: ansible_os_family == 'RedHat'
+    when:
+      - ansible_os_family == 'RedHat'
     notify: do_reboot
 
   - name: Setup KVM and plugins
@@ -157,7 +204,8 @@
       - python-libvirt
       - libguestfs-tools
       - virtinst
-    when: ansible_os_family == 'Debian'
+    when: 
+      - ansible_os_family == 'Debian'
     notify: do_reboot
 
   - name: Enable and start SSH services
@@ -176,7 +224,8 @@
     with_items:
       - cockpit.socket
       - cockpit
-    when: ansible_os_family == 'RedHat'
+    when: 
+      - ansible_os_family == 'RedHat'
 
   - name: Enable and start KVM services
     become: true
@@ -240,7 +289,7 @@
   gather_facts: true
 
   vars:
-    rebootem: false
+    rebootem: true
 
   tasks:
   # Setup X11 on Wayland systems
