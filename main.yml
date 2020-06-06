@@ -300,6 +300,13 @@
       special_time: reboot
       job: "sleep 120 && /usr/local/bin/onboot.sh"
 
+  - name: Setup @hourly  cron entry
+    become: true
+    cron:
+      name: "Setup hourly entry"
+      special_time: hourly
+      job: "/usr/local/bin/onboot.sh"
+
   handlers:
   - name: do_reboot
     become: true
