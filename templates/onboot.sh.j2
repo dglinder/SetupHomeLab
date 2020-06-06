@@ -7,7 +7,7 @@ set -u
 #   fields:       A    B    C    D    E
 #     C : 0x01..0x02 = Cooling zone
 #     D : 0x00..0xff = Fan speed
-HOUR=$(date +%H)
+HOUR=$(date +%H | sed 's/^0//g')
 if [[ ${HOUR} -gt 21 || ${HOUR} -lt 8 ]] ; then
   # Faster/cooler at night
   SPEED=0x80
