@@ -8,9 +8,9 @@ set -u
 #     C : 0x01..0x02 = Cooling zone
 #     D : 0x00..0xff = Fan speed
 HOUR=$(date +%H | sed 's/^0//g')
-if [[ ${HOUR} -gt 21 || ${HOUR} -lt 8 ]] ; then
+if [[ ${HOUR} -gt 23 || ${HOUR} -lt 8 ]] ; then
   # Faster/cooler at night
-  SPEED=0x80
+  SPEED=0x60
 else
   # Queiter during work hours
   SPEED=0x20
