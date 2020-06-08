@@ -112,7 +112,7 @@
 
   handlers:
   - name: do_reboot
-    become: true
+#    become: true
     reboot:
     when: rebootem
 
@@ -121,17 +121,9 @@
 
   vars:
     rebootem: false
+    container_namespace: 10000
 
   tasks:
-#  - name: Setup hostname
-#    include_role:
-#      name: fqdn
-#      apply:
-#        become: true
-#    vars:
-#      fqdn: "{{ inventory_hostname }}"
-#      hostname: "{{ inventory_hostname_short }}"
-
 # Setup Cockpit on RedHat systems
   - name: Setup cockpit packages - RedHat 8
     become: true
@@ -156,10 +148,22 @@
       - cockpit-system
       - cockpit-bridge
       - cockpit-ws
+      - cockpit-dashboard
+      - cockpit-machines
+      - cockpit-docker
+      - cockpit-system
     when:
       - ansible_os_family == 'RedHat'
       - ansible_distribution_major_version|int == 7
     notify: do_reboot
+
+  - name: Open up Cockpit server firewall ports
+    become: true
+    firewalld:
+      port: 9090/tcp
+      state: enabled
+      permanent: yes
+    notify: reload_firewall
 
   - name: Setup cockpit container packages - RedHat 7+ and Fedora
     become: true
@@ -167,12 +171,20 @@
       state: installed
       name:
       - podman
-      - podman-docker
+#      - podman-docker  # Conflicts with docker which cockpit brings in
     when:
     - ansible_os_family == 'RedHat'
     - ansible_distribution_major_version|int >= 7
     notify: do_reboot
 
+  - name: Setup namespaces system control
+    become: true
+    sysctl:
+      name: "user.max_user_namespaces"
+      value: "{{ container_namespace }}"
+      state: present
+#    notify: Restart_services
+    
   - name: Setup cockpit packages - Fedora
     become: true
     package:
@@ -302,9 +314,14 @@
 
   handlers:
   - name: do_reboot
-    become: true
+#    become: true
     reboot:
     when: rebootem
+
+  - name: reload_firewall
+    systemd:
+      name: firewalld
+      state: reloaded
 
 - hosts: workstations
   gather_facts: true
@@ -359,7 +376,7 @@
 
   handlers:
   - name: do_reboot
-    become: true
+#    become: true
     reboot:
     when: rebootem
 
@@ -376,7 +393,7 @@
 
   handlers:
   - name: do_reboot
-    become: true
+#    become: true
     reboot:
     when: rebootem
 
