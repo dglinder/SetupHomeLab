@@ -29,8 +29,20 @@
 
   vars:
     rebootem: false
+    packages:
+      RedHat:
+        RedHat:
+          '7':
+            - package_A
+        Fedora:
+          '32':
+            - package_B
 
   tasks:
+  - name: Show ansible_os_family / ansible_distribution / ansible_distribution_major_version
+    debug:
+      msg: "{{ ansible_os_family }} / {{ ansible_distribution }} / {{ ansible_distribution_major_version }}"
+
   - name: Store user name
     become: false
     set_fact:
