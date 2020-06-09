@@ -155,7 +155,7 @@
 
   handlers:
   - name: do_reboot
-#    become: true
+    become: true
     reboot:
     when: rebootem
 
@@ -374,7 +374,7 @@
 
   handlers:
   - name: do_reboot
-#    become: true
+    become: true
     reboot:
     when: rebootem
 
@@ -428,15 +428,9 @@
       - f29-backgrounds-animated
       - f30-backgrounds-animated
 
-#  - name: Setup handy patching sudoers entry
-#    become: true
-#    lineinfile:
-#      file: /etc/sudoers
-#      line: %wheel localhost=/home/dan/bin/doup -y
-
   handlers:
   - name: do_reboot
-#    become: true
+    become: true
     reboot:
     when: rebootem
 
@@ -453,7 +447,7 @@
 
   handlers:
   - name: do_reboot
-#    become: true
+    become: true
     reboot:
     when: rebootem
 
