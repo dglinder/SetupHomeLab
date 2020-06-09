@@ -7,6 +7,8 @@ set -u
 #   fields:       A    B    C    D    E
 #     C : 0x01..0x02 = Cooling zone
 #     D : 0x00..0xff = Fan speed
+LOGPREFIX="$(date "+%Y%m%d,%H%M")"
+LOGFILE="/var/tmp/temp_log-$(date "+%Y%m").csv"
 HOUR=$(date +%H | sed 's/^0//g')
 if [[ ${HOUR} -gt 23 || ${HOUR} -lt 8 ]] ; then
   # Faster/cooler at night
@@ -17,5 +19,26 @@ else
 fi
 for X in 0x00 0x01 0x02 ; do
   /usr/bin/ipmitool raw 0x3a 0x07 ${X} ${SPEED} 0x01 > /var/tmp/ipmitool.${X}.out 2>&1
+done
+
+# Store periodic temperature information
+CTR=1
+cat /tmp/raw.ipmitoo.sdr.out | grep Temp | while read LINE ; do
+  #echo -n "${CTR}:${LINE} --> "
+  CTR=$(( $CTR + 1 ))
+  OIFS="${IFS}"
+  IFS='|'
+  read SRC TEMP STAT <<< ${LINE}
+  IFS="${OIFS}"
+  TEMP="$(echo ${TEMP} | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  SRC="$(echo ${SRC} | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  if [[ "${TEMP}" == "0x00" || "${TEMP}" == "no reading" ]] ; then
+  #  echo "     CONTINUING"
+    continue
+  fi
+  TEMP_U=$(echo ${TEMP} | cut -d\  -f3)
+  TEMP=$(echo ${TEMP} | cut -d\  -f1)
+  #echo "SRC: ${SRC}, TEMP: ${TEMP} ${TEMP_U}, STAT: ${STAT}"
+  echo "${LOGPREFIX},\"${SRC}\",${TEMP}${TEMP_U},\"${STAT}\"" >> ${LOGFILE}
 done
 
