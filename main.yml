@@ -353,7 +353,7 @@
       name: lorax-composer.socket
     when: ansible_os_family == 'RedHat'
 
-  - name: Setup @reboot script
+  - name: Setup fan speed update script
     become: true
     template:
       src: templates/onboot.sh.j2
@@ -362,19 +362,15 @@
       owner: root
       group: root
 
-  - name: Setup @reboot cron entry
+  - name: Setup cron entries
     become: true
     cron:
-      name: "Setup reboot entry"
-      special_time: reboot
+      name: "Setup {{ item }} fan speed update"
+      special_time: "{{ item }}"
       job: "sleep 120 && /usr/local/bin/onboot.sh"
-
-  - name: Setup @hourly  cron entry
-    become: true
-    cron:
-      name: "Setup hourly entry"
-      special_time: hourly
-      job: "/usr/local/bin/onboot.sh"
+    loop:
+      - reboot
+      - hourly
 
   handlers:
   - name: do_reboot
