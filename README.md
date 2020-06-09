@@ -1,5 +1,8 @@
 Setup notes:
 
+1. Attach a subscription
+   * `subscription-manager register`
+   * `subscription-manager attach --auto`
 1. Add the Ansible repository
 From: https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-rhel-centos-or-fedora
    * `subscription-manager repos --enable rhel-7-server-ansible-2.9-rpms`
