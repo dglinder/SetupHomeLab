@@ -86,17 +86,30 @@
       - ansible_distribution == 'RedHat'
       - ansible_os_family == 'RedHat'
 
-  - name: Ensure RedHat has the additional repositores setup
+  - name: "Ensure RedHat 8 has the repositores setup"
     become: true
     rhsm_repository:
       name:
-        - "rhel-{{ ansible_distribution_major_version }}-server-extras-rpms"
-        - "rhel-{{ ansible_distribution_major_version }}-server-ansible-2.9-rpms"
-        - "rhel-server-rhscl-{{ ansible_distribution_major_version }}-rpms"
+        - "ansible-2-for-rhel-{{ ansible_distribution_major_version }}-x86_64-rpms" # Red Hat Ansible Engine 2 for RHEL 8 x86_64
       state: enabled
     when:
       - ansible_os_family == 'RedHat'
       - ansible_distribution == 'RedHat'
+      - ansible_distribution_major_version|int == 8
+    register: install_repos
+
+  - name: "Ensure RedHat 7 has the repositores setup"
+    become: true
+    rhsm_repository:
+      name:
+        - "rhel-{{ ansible_distribution_major_version }}-server-extras-rpms"
+        - "rhel-server-rhscl-{{ ansible_distribution_major_version }}-rpms"
+        - "rhel-{{ ansible_distribution_major_version }}-server-ansible-2.9-rpms"
+      state: enabled
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution == 'RedHat'
+      - ansible_distribution_major_version|int == 7
     register: install_repos
 
   - name: Update repository cache
