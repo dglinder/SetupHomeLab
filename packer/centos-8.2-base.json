@@ -22,7 +22,21 @@
     ],
 
     "boot_command": [
-      "<down><down><end> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait15m><leftCtrlOn>x<leftCtrlOff><wait>"
+      "<tab>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
+      "<wait>",
+      "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.text inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cf<wait15m>",
+      "<enter>"
     ],
 
     "shutdown_command": "echo 'shutdown -P now' > shutdown.sh; echo 'nullgrid'|sudo -S sh 'shutdown.sh'",
