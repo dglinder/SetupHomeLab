@@ -1,0 +1,7 @@
+{
+  "esxi_host": "esx.lab.linder.org",
+  "esxi_datastore": "datastore1",
+  "esxi_username": "root",
+  "esxi_password": "q7-19ezx"
+}
+
