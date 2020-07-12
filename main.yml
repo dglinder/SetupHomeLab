@@ -29,14 +29,27 @@
 
   vars:
     rebootem: false
-    packages:
+    all_packages:
       RedHat:
+        all:
+          - tmux
+          - vim
+          - ansible
+          - nmap
+          - git
+          - sos-collector
+          - nc
+          - figlet
         RedHat:
           '7':
-            - package_A
+            - rh-python36-PyYAML
+            - rh-python36-python-pip
+            - ansible-lint
+          '8':
+            - vim
         Fedora:
           '32':
-            - package_B
+            - vim
 
   tasks:
   - name: Show ansible_os_family / ansible_distribution / ansible_distribution_major_version
@@ -119,29 +132,30 @@
     when:
       - install_epel is changed or install_repos is changed
 
+  - name: "Start here"
+    debug:
+      msg: "Start here"
+
 # Add handy programs
-  - name: Setup commonly handy packages on Linux
+  - name: Setup common packages on Linux
     become: true
     package:
       state: installed
-      name:
-      - tmux
-      - vim
-      - ansible
-      - nmap
-      - git
-      - sos-collector
-      - nc
-      - ansible-lint
-      - figlet
-      - rh-python36-PyYAML
-      - rh-python36-python-pip
+      name: "{{ all_packages[ansible_os_family]['all'] }}"
+    when: ansible_os_family == 'RedHat'
+    notify: do_reboot
+
+  - name: Setup common packages that are release specific
+    become: true
+    package:
+      state: installed
+      name: "{{ all_packages[ansible_os_family][ansible_distribution][ansible_distribution_major_version] }}"
     when: ansible_os_family == 'RedHat'
     notify: do_reboot
 
   handlers:
   - name: do_reboot
-#    become: true
+    become: true
     reboot:
     when: rebootem
 
@@ -151,6 +165,30 @@
   vars:
     rebootem: false
     container_namespace: 10000
+    kvm_packages:
+      RedHat:
+        RedHat:
+          '7':
+            - qemu-kvm
+            - libvirt
+            - libvirt-python
+            - libguestfs-tools
+            - virt-install
+          '8':
+            - qemu-kvm
+            - qemu-img
+            - libvirt
+            - virt-install
+            - libvirt-client
+      Debian:
+        Debian:
+          '20.04':
+            - qemu-kvm
+            - libvirt-daemon-system
+            - python-libvirt
+            - libguestfs-tools
+            - virtinst
+
 
   tasks:
 # Setup Cockpit on RedHat systems
@@ -230,12 +268,7 @@
     become: true
     package:
       state: installed
-      name:
-      - qemu-kvm
-      - libvirt
-      - libvirt-python
-      - libguestfs-tools
-      - virt-install
+      name: "{{ kvm_packages[ansible_os_family][ansible_distribution][ansible_distribution_major_version] }}"
     when:
       - ansible_os_family == 'RedHat'
     notify: do_reboot
@@ -244,12 +277,7 @@
     become: true
     package:
       state: installed
-      name:
-      - qemu-kvm
-      - libvirt-daemon-system
-      - python-libvirt
-      - libguestfs-tools
-      - virtinst
+      name: "{{ kvm_packages[ansible_os_family][ansible_distribution][ansible_distribution_major_version] }}"
     when: 
       - ansible_os_family == 'Debian'
     notify: do_reboot
@@ -325,7 +353,7 @@
       name: lorax-composer.socket
     when: ansible_os_family == 'RedHat'
 
-  - name: Setup @reboot script
+  - name: Setup fan speed update script
     become: true
     template:
       src: templates/onboot.sh.j2
@@ -334,23 +362,19 @@
       owner: root
       group: root
 
-  - name: Setup @reboot cron entry
+  - name: Setup cron entries
     become: true
     cron:
-      name: "Setup reboot entry"
-      special_time: reboot
+      name: "Setup {{ item }} fan speed update"
+      special_time: "{{ item }}"
       job: "sleep 120 && /usr/local/bin/onboot.sh"
-
-  - name: Setup @hourly  cron entry
-    become: true
-    cron:
-      name: "Setup hourly entry"
-      special_time: hourly
-      job: "/usr/local/bin/onboot.sh"
+    loop:
+      - reboot
+      - hourly
 
   handlers:
   - name: do_reboot
-#    become: true
+    become: true
     reboot:
     when: rebootem
 
@@ -404,15 +428,9 @@
       - f29-backgrounds-animated
       - f30-backgrounds-animated
 
-#  - name: Setup handy patching sudoers entry
-#    become: true
-#    lineinfile:
-#      file: /etc/sudoers
-#      line: %wheel localhost=/home/dan/bin/doup -y
-
   handlers:
   - name: do_reboot
-#    become: true
+    become: true
     reboot:
     when: rebootem
 
@@ -429,7 +447,7 @@
 
   handlers:
   - name: do_reboot
-#    become: true
+    become: true
     reboot:
     when: rebootem
 
