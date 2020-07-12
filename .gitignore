@@ -1,1 +1,3 @@
 vault_password
+*/*.iso
+packer/packer_cache
