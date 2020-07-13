@@ -47,6 +47,13 @@
             - ansible-lint
           '8':
             - vim
+        CentOS:
+          '7':
+            - rh-python36-PyYAML
+            - rh-python36-python-pip
+            - ansible-lint
+          '8':
+            - vim
         Fedora:
           '32':
             - vim
