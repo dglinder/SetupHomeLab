@@ -21,23 +21,21 @@
       "preseed/ubuntu.cfg"
     ],
 
+    "http_directory": "http",
+    "http_port_min": "6001",
+    "http_port_max": "6100",
+
     "boot_command": [
-      "<tab>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-      "<wait>",
-      "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.text inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cf<wait15m>",
-      "<enter>"
+      "<esc><wait>",
+      "vmlinuz ",
+      " initrd=initrd.img ",
+      " inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd ",
+      " it_build_flag=PACKER ",
+      " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg ",
+      " <wait10m> ",
+      " <enter> "
     ],
+
 
     "shutdown_command": "echo 'shutdown -P now' > shutdown.sh; echo 'nullgrid'|sudo -S sh 'shutdown.sh'",
 
