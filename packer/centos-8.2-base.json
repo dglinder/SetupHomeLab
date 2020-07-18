@@ -10,11 +10,15 @@
     "iso_url": "./CentOS-8.2.2004-x86_64-dvd1.iso",
     "iso_checksum": "sha256:c87a2d81d67bbaeaf646aea5bedd70990078ec252fc52f5a7d65ff609871e255",
 
-    "ssh_username": "nullgrid",
-    "ssh_password": "nullgrid",
+    "ssh_username": "root",
+    "ssh_password": "Ch@ng3!meN0W",
     "ssh_timeout": "15m",
     "vnc_disable_password": "true",
 
+    "memory": "8192",
+    "cpus": "1",
+    "cores": "2",
+    "disk_size": "65535",
     "disk_type_id": "thin",
 
     "floppy_files": [
@@ -22,8 +26,8 @@
     ],
 
     "http_directory": "http",
-    "http_port_min": "6001",
-    "http_port_max": "6100",
+    "http_port_min": "6000",
+    "http_port_max": "6009",
 
     "boot_command": [
       "<esc><wait>",
@@ -32,12 +36,11 @@
       " inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd ",
       " it_build_flag=PACKER ",
       " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg ",
-      " <wait10m> ",
+      " <wait10> ",
       " <enter> "
     ],
 
-
-    "shutdown_command": "echo 'shutdown -P now' > shutdown.sh; echo 'nullgrid'|sudo -S sh 'shutdown.sh'",
+    "shutdown_command": "shutdown -P now",
 
     "remote_type": "esx5",
     "remote_host": "{{user `esxi_host`}}",
