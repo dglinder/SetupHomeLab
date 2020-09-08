@@ -9,7 +9,7 @@ From: https://docs.ansible.com/ansible/latest/installation_guide/intro_installat
 1. Install Ansible and Ansible Galaxy
    * `yum -y install ansible ansible-galaxy`
 1. Ensure the roles are downloaded using the requirements.yml:
-   * `ansible-galaxy install -r roles/requirements.yml -p ./roles/`
+   * `ansible-galaxy role install -r roles/requirements.yml -p ./roles/`
 1. Make sure your account on each inventory has this users ssh key
    * `ssh-copy-id -i ~/.ssh/id_ed25519.pub ${USER}@[target]`
 1. Add/update the sudo password in the password.yml file

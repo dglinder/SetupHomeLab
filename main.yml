@@ -1,7 +1,7 @@
 #!/usr/bin/ansible-playbook
 #
 # Ensure the roles are downloaded using the requirements.yml:
-#   ansible-galaxy install -r roles/requirements.yml # -p ./roles/
+#   ansible-galaxy role install -r roles/requirements.yml # -p ./roles/
 #
 # Make sure your account on each inventory has this users ssh key
 #   ssh-copy-id -i ~/.ssh/id_ed25519.pub ${USER}@[target]
@@ -28,7 +28,6 @@
   gather_facts: true
 
   vars:
-    rebootem: false
     all_packages:
       RedHat:
         all:
@@ -103,7 +102,7 @@
       - "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
     register: install_epel
     when:
-      - ansible_distribution == 'RedHat'
+      - ansible_distribution in [ 'RedHat', 'CentOS' ]
       - ansible_os_family == 'RedHat'
 
   - name: "Ensure RedHat 8 has the repositores setup"
@@ -139,10 +138,6 @@
     when:
       - install_epel is changed or install_repos is changed
 
-  - name: "Start here"
-    debug:
-      msg: "Start here"
-
 # Add handy programs
   - name: Setup common packages on Linux
     become: true
@@ -164,13 +159,11 @@
   - name: do_reboot
     become: true
     reboot:
-    when: rebootem
 
 - hosts: base_hosts
   gather_facts: true
 
   vars:
-    rebootem: false
     container_namespace: 10000
     kvm_packages:
       RedHat:
@@ -383,7 +376,6 @@
   - name: do_reboot
     become: true
     reboot:
-    when: rebootem
 
   - name: reload_firewall
     systemd:
@@ -392,9 +384,6 @@
 
 - hosts: workstations
   gather_facts: true
-
-  vars:
-    rebootem: false
 
   tasks:
   # Setup X11 on Wayland systems
@@ -439,7 +428,6 @@
   - name: do_reboot
     become: true
     reboot:
-    when: rebootem
 
 - hosts: all
   gather_facts: true
@@ -456,6 +444,5 @@
   - name: do_reboot
     become: true
     reboot:
-    when: rebootem
 
 
