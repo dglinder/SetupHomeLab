@@ -31,7 +31,7 @@ variable "datastore" { type = string }
 variable "vswitch" { type = string }
 variable "vlan_id" { type = number }
 variable "home_network" { type = string }
-variable "k3s_network" { type = string }
+variable "okd4_network" { type = string }
 variable "guest_vm_ssh_user" { type = string }
 variable "guest_vm_ssh_port" { type = number }
 variable "guest_vm_ssh_passwd" { type = string }
@@ -49,8 +49,8 @@ provider "esxi" {
   esxi_password = var.my_esxi_password
 }
 
-resource "esxi_guest" "k3s_master" {
-  guest_name     = "k3s_master"
+resource "esxi_guest" "okd4_bootstrap" {
+  guest_name     = "okd4_bootstrap"
   numvcpus       = "4"
   memsize        = "16384" # in Mb
   boot_disk_size = "120"   # in Gb
@@ -60,11 +60,11 @@ resource "esxi_guest" "k3s_master" {
   virthwver      = "13"
   clone_from_vm = "/Template-CentOS-8"
   guestinfo      = {
-    metadata = "k3s_master"
+    metadata = "okd4_bootstrap"
   }
 
   network_interfaces {
-    mac_address     = var.hn_to_k3smac["k3s_master"]
+    mac_address     = var.hn_to_k3smac["okd4_bootstrap"]
     virtual_network = var.home_network
     nic_type        = "vmxnet3"
     # NOTE: the ipv4_address/_gateway are not supported with esxi.
@@ -73,8 +73,75 @@ resource "esxi_guest" "k3s_master" {
   }
 }
 
-resource "esxi_guest" "k3s_compute" {
-  guest_name     = "k3s_compute-${count.index}"
+resource "esxi_guest" "okd4_services" {
+  guest_name     = "okd4_services"
+  numvcpus       = "4"
+  memsize        = "4096" # in Mb
+  boot_disk_size = "120"   # in Gb
+  boot_disk_type = "thin"
+  disk_store     = var.datastore
+  power          = "on"
+  virthwver      = "13"
+  clone_from_vm = "/Template-CentOS-8"
+  guestinfo      = {
+    metadata = "okd4_services"
+  }
+
+  network_interfaces {
+    mac_address     = var.hn_to_k3smac["okd4_services"]
+    virtual_network = var.home_network
+    nic_type        = "vmxnet3"
+    # NOTE: the ipv4_address/_gateway are not supported with esxi.
+    # Use the CloudInit or other options documented here:
+    #   https://github.com/josenk/terraform-provider-esxi-wiki
+  }
+}
+
+resource "esxi_guest" "okd4_pfsense" {
+  guest_name     = "okd4_pfsense"
+  numvcpus       = "1"
+  memsize        = "1024" # in Mb
+  boot_disk_size = "8"   # in Gb
+  boot_disk_type = "thin"
+  disk_store     = var.datastore
+  power          = "on"
+  virthwver      = "13"
+  clone_from_vm = "/Template-pfSense-2.4.5"
+  guestinfo      = {
+    metadata = "okd4_pfsense"
+  }
+
+  network_interfaces {
+    mac_address     = var.hn_to_k3smac["okd4_pfsense"]
+    virtual_network = var.home_network
+    nic_type        = "vmxnet3"
+    # NOTE: the ipv4_address/_gateway are not supported with esxi.
+    # Use the CloudInit or other options documented here:
+    #   https://github.com/josenk/terraform-provider-esxi-wiki
+  }
+}
+
+resource "esxi_guest" "okd4_control_plane" {
+  guest_name     = "okd4_control_plane_${count.index}"
+  numvcpus       = "4"
+  memsize        = "16384" # in Mb
+  boot_disk_size = "120"   # in Gb
+  boot_disk_type = "thin"
+  disk_store     = var.datastore
+  power          = "on"
+  virthwver      = "13"
+  clone_from_vm = "/Template-CentOS-8"
+  count          = 3
+
+  network_interfaces {
+    virtual_network = var.home_network
+    nic_type        = "vmxnet3"
+    mac_address     = var.hn_to_k3smac["okd4_control_plane_${count.index}"]
+  }
+}
+
+resource "esxi_guest" "okd4_compute" {
+  guest_name     = "okd4_compute_${count.index}"
   numvcpus       = "4"
   memsize        = "16384" # in Mb
   boot_disk_size = "120"   # in Gb
@@ -88,20 +155,32 @@ resource "esxi_guest" "k3s_compute" {
   network_interfaces {
     virtual_network = var.home_network
     nic_type        = "vmxnet3"
-    mac_address     = var.hn_to_k3smac["k3s_compute-${count.index}"]
+    mac_address     = var.hn_to_k3smac["okd4_compute_${count.index}"]
   }
 }
 
 resource "local_file" "AnsibleInventory" {
  content = templatefile("hosts.tpl",
    {
-    k3s_master-dns = esxi_guest.k3s_master.guest_name,
-    k3s_master-ip  = esxi_guest.k3s_master.ip_address,
-    k3s_master-id  = esxi_guest.k3s_master.id,
+    okd4_bootstrap-dns = esxi_guest.okd4_bootstrap.guest_name,
+    okd4_bootstrap-ip  = esxi_guest.okd4_bootstrap.ip_address,
+    okd4_bootstrap-id  = esxi_guest.okd4_bootstrap.id,
   
-    k3s_compute-dns = esxi_guest.k3s_compute.*.guest_name,
-    k3s_compute-ip  = esxi_guest.k3s_compute.*.ip_address,
-    k3s_compute-id  = esxi_guest.k3s_compute.*.id
+    okd4_services-dns = esxi_guest.okd4_services.guest_name,
+    okd4_services-ip  = esxi_guest.okd4_services.ip_address,
+    okd4_services-id  = esxi_guest.okd4_services.id,
+  
+    okd4_pfsense-dns = esxi_guest.okd4_pfsense.guest_name,
+    okd4_pfsense-ip  = esxi_guest.okd4_pfsense.ip_address,
+    okd4_pfsense-id  = esxi_guest.okd4_pfsense.id,
+  
+    okd4_control_plane-dns = esxi_guest.okd4_control_plane.*.guest_name,
+    okd4_control_plane-ip  = esxi_guest.okd4_control_plane.*.ip_address,
+    okd4_control_plane-id  = esxi_guest.okd4_control_plane.*.id
+  
+    okd4_compute-dns = esxi_guest.okd4_compute.*.guest_name,
+    okd4_compute-ip  = esxi_guest.okd4_compute.*.ip_address,
+    okd4_compute-id  = esxi_guest.okd4_compute.*.id
    }
  )
  filename = "inventory"
