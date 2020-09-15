@@ -35,7 +35,7 @@
       - ansible_os_family == 'RedHat'
       - ansible_distribution_major_version|int >= 8
 
-  - name: "Install EPEL - {{ ansible_distribution }} . {{ ansible_os_family }}"
+  - name: "Install EPEL"
     become: true
     package:
       state: installed
@@ -106,6 +106,7 @@
       state: enabled
     notify: restart_firewalld
 
+  # Setup local DNS server
   - name: Install bind apps
     become: true
     package:
@@ -167,7 +168,91 @@
       state: enabled
     notify: restart_firewalld
 
+  # Setup local HAProxy
+
+  - name: Install HAproxy
+    become: true
+    package:
+      name:
+        - haproxy
+
+  - name: Build haproxy.cfg
+    template:
+      src: templates/haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+      # setype: named_conf_t
+      # seuser: system_u
+      # serole: object_r
+      mode: 0644
+      # group: named
+
+  - name: Set SELinux haproxy boolean values
+    seboolean:
+      name: haproxy_connect_any
+      state: yes
+      persistent: yes
+
+  - name: Enable haproxy
+    service:
+      name: haproxy
+      state: started
+      enabled: true
+
+  - name: Open up OKD4 FW ports
+    firewalld:
+      port: "{{ item }}"
+      permanent: true
+      state: enabled
+    with_items:
+      - 6443/tcp
+      - 22623/tcp
+    notify: restart_firewalld
+
+  - name: Open up OKD4 FW services
+    firewalld:
+      service: "{{ item }}"
+      permanent: true
+      state: enabled
+    with_items:
+      - http
+      - https
+    notify: restart_firewalld
 #
+  # Setup local HAProxy
+  - name: Install Apache
+    become: true
+    package:
+      name:
+        - httpd
+
+  - name: Setup Apache to listen on 8080
+    become: true
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^Listen 80'
+      line: 'Listen 8080'
+
+  - name: Set SELinux Apache boolean values
+    seboolean:
+      name: httpd_read_user_content 
+      state: yes
+      persistent: yes
+
+  - name: Enable httpd
+    service:
+      name: httpd
+      state: started
+      enabled: true
+
+  - name: Open up OKD4 FW ports
+    firewalld:
+      port: "{{ item }}"
+      permanent: true
+      state: enabled
+    with_items:
+      - 8080/tcp
+    notify: restart_firewalld
+
   - name: Update NetworkManager.conf
     ini_file:
       dest: /etc/NetworkManager/NetworkManager.conf
@@ -197,7 +282,6 @@
       enabled: yes
     when: netmgr is changed
 
-#
   handlers:
   - name: restart_firewalld
     become: true
