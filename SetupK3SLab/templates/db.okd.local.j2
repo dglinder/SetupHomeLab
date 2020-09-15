@@ -1,0 +1,40 @@
+$TTL    604800
+@       IN      SOA     okd4_services.okd.local. admin.okd.local. (
+                  1     ; Serial
+             604800     ; Refresh
+              86400     ; Retry
+            2419200     ; Expire
+             604800     ; Negative Cache TTL
+)
+
+; name servers - NS records
+    IN      NS      okd4_services
+
+; name servers - A records
+okd4_services.okd.local.             IN   A  {{ hostvars.okd4_services.ansible_default_ipv4.address }}
+
+; OpenShift Container Platform Cluster - A records
+okd4_bootstrap.lab.okd.local.        IN   A  {{ hostvars.okd4_services.ansible_default_ipv4.address }}
+# TODO: Make these more dynamic based on membership of "control_plane" group
+okd4_control_plane-0.lab.okd.local.  IN   A  {{ hostvars.okd4_control_plane_0.ansible_default_ipv4.address }}
+okd4_control_plane-1.lab.okd.local.  IN   A  {{ hostvars.okd4_control_plane_1.ansible_default_ipv4.address }}
+okd4_control_plane-2.lab.okd.local.  IN   A  {{ hostvars.okd4_control_plane_2.ansible_default_ipv4.address }}
+# TODO: Make these more dynamic based on membership of "compute" group
+okd4_compute_0.lab.okd.local.        IN   A  {{ hostvars.okd4_compute_0.ansible_default_ipv4.address }}
+okd4_compute_1.lab.okd.local.        IN   A  {{ hostvars.okd4_compute_1.ansible_default_ipv4.address }}
+
+; OpenShift internal cluster IPs - A records
+api.lab.okd.local.     IN   A  {{ hostvars.okd4_services.ansible_default_ipv4.address }}
+api-int.lab.okd.local. IN   A  {{ hostvars.okd4_services.ansible_default_ipv4.address }}
+*.apps.lab.okd.local.  IN   A  {{ hostvars.okd4_services.ansible_default_ipv4.address }}
+# TODO: Make these more dynamic based on membership of "control_plane" group
+etcd-0.lab.okd.local.  IN   A  {{ hostvars.okd4_control_plane_0.ansible_default_ipv4.address }}
+etcd-1.lab.okd.local.  IN   A  {{ hostvars.okd4_control_plane_1.ansible_default_ipv4.address }}
+etcd-2.lab.okd.local.  IN   A  {{ hostvars.okd4_control_plane_2.ansible_default_ipv4.address }}
+console-openshift-console.apps.lab.okd.local.  IN  A  {{ hostvars.okd4_services.ansible_default_ipv4.address }}
+oauth-openshift.apps.lab.okd.local.            IN  A  {{ hostvars.okd4_services.ansible_default_ipv4.address }}
+
+; OpenShift internal cluster IPs - SRV records
+_etcd-server-ssl._tcp.lab.okd.local.    86400     IN    SRV     0    10    2380    etcd-0.lab
+_etcd-server-ssl._tcp.lab.okd.local.    86400     IN    SRV     0    10    2380    etcd-1.lab
+_etcd-server-ssl._tcp.lab.okd.local.    86400     IN    SRV     0    10    2380    etcd-2.lab

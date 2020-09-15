@@ -1,0 +1,219 @@
+#!/usr/bin/ansible-playbook
+---
+- hosts: all
+  gather_facts: true
+
+  tasks:
+  - name: Setup passwordless sudo
+    become: true
+    lineinfile:
+      path: /etc/sudoers
+      state: present
+      line: "{{ username_on_remote }} ALL=(ALL) NOPASSWD:ALL"
+      validate: /usr/sbin/visudo -cf %s
+
+  - name: Setup hostname
+    include_role:
+      name: fqdn
+      apply:
+        become: true
+    vars:
+      fqdn: "{{ inventory_hostname }}"
+      hostname: "{{ inventory_hostname_short }}"
+#
+- hosts: services
+  gather_facts: true
+
+  tasks:
+  - name: Setup automatic updates
+    become: true
+    package:
+      state: installed
+      name:
+      - dnf-automatic
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution_major_version|int >= 8
+
+  - name: "Install EPEL - {{ ansible_distribution }} . {{ ansible_os_family }}"
+    become: true
+    package:
+      state: installed
+      name:
+      - "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+    register: install_epel
+    when:
+      - ansible_distribution in [ 'RedHat', 'CentOS' ]
+      - ansible_os_family == 'RedHat'
+
+  - name: "Ensure RedHat 8 has the repositores setup"
+    become: true
+    rhsm_repository:
+      name:
+        - "ansible-2-for-rhel-{{ ansible_distribution_major_version }}-x86_64-rpms" # Red Hat Ansible Engine 2 for RHEL 8 x86_64
+      state: enabled
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution == 'RedHat'
+      - ansible_distribution_major_version|int == 8
+    register: install_repos
+
+  - name: "Ensure RedHat 7 has the repositores setup"
+    become: true
+    rhsm_repository:
+      name:
+        - "rhel-{{ ansible_distribution_major_version }}-server-extras-rpms"
+        - "rhel-server-rhscl-{{ ansible_distribution_major_version }}-rpms"
+        - "rhel-{{ ansible_distribution_major_version }}-server-ansible-2.9-rpms"
+      state: enabled
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution == 'RedHat'
+      - ansible_distribution_major_version|int == 7
+    register: install_repos
+
+  - name: Update repository cache
+    become: true
+    package:
+      update_cache: yes
+      state: latest
+      name: "*"
+    notify: do_reboot
+
+  - name: Install Chrome browser
+    become: true
+    package:
+      name: chromium
+
+  - name: Install XRDP
+    become: true
+    package:
+      name:
+        - xrdp
+        - tigervnc-server
+
+  - name: Enable XRDP
+    service:
+      name: xrxp
+      state: started
+      enabled: true
+    notify: restart_firewalld
+
+  - name: Open up XRDP FW port
+    firewalld:
+      service: xrxp
+      permanent: true
+      state: enabled
+    notify: restart_firewalld
+
+# Setup DNS services
+  - name: Install apps
+    become: true
+    package:
+      name:
+        - bind
+        - bind-utils
+
+  - name: Build named.conf file
+    template:
+      src: templates/named.conf.j2
+      dest: /etc/named.conf
+      setype: named_conf_t
+      seuser: system_u
+      serole: object_r
+      mode: 0640
+      group: named
+
+  - name: Build named.conf.local file
+    template:
+      src: templates/named.conf.local.j2
+      dest: /etc/named/named.conf.local
+      setype: named_conf_t
+      seuser: system_u
+      serole: object_r
+      mode: 0640
+      group: named
+
+  - name: Build db.okd.local file
+    template:
+      src: templates/db.okd.local.j2
+      dest: /etc/named/db.okd.local
+      setype: named_conf_t
+      seuser: system_u
+      serole: object_r
+      mode: 0640
+      group: named
+
+  - name: Build db.subnet file
+    template:
+      src: templates/db.subnet.j2
+      dest: /etc/named/db.subnet
+      setype: named_conf_t
+      seuser: system_u
+      serole: object_r
+      mode: 0640
+      group: named
+  
+  handlers:
+  - name: restart_firewalld
+    become: true
+    systemd:
+      name: firewalld
+      state: reloaded
+
+  - name: do_reboot
+    become: true
+    reboot:
+#
+- hosts: pfsense
+  gather_facts: true
+
+  # Include this module?
+  # https://github.com/opoplawski/ansible-pfsense/
+
+  tasks:
+  - name: Do stuff
+    debug:
+      msg: "Do stuff here"
+
+#
+- hosts: bootstrap
+  gather_facts: true
+
+  tasks:
+  - name: Do stuff
+    debug:
+      msg: "Do stuff here"
+
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+
+#
+- hosts: control_plane
+  gather_facts: true
+  
+  tasks:
+  - name: Do stuff
+    debug:
+      msg: "Do stuff here"
+
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+#
+- hosts: compute
+  gather_facts: true
+  
+  tasks:
+  - name: Do stuff
+    debug:
+      msg: "Do stuff here"
+
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+#
