@@ -9,7 +9,7 @@
     lineinfile:
       path: /etc/sudoers
       state: present
-      line: "{{ username_on_remote }} ALL=(ALL) NOPASSWD:ALL"
+      line: "{{ ansible_user_id }} ALL=(ALL) NOPASSWD:ALL"
       validate: /usr/sbin/visudo -cf %s
 
   - name: Setup hostname
@@ -106,8 +106,7 @@
       state: enabled
     notify: restart_firewalld
 
-# Setup DNS services
-  - name: Install apps
+  - name: Install bind apps
     become: true
     package:
       name:
@@ -153,7 +152,52 @@
       serole: object_r
       mode: 0640
       group: named
-  
+
+  - name: Enable named
+    service:
+      name: named
+      state: started
+      enabled: true
+    notify: restart_firewalld
+
+  - name: Open up named FW port
+    firewalld:
+      port: 53/udp
+      permanent: true
+      state: enabled
+    notify: restart_firewalld
+
+#
+  - name: Update NetworkManager.conf
+    ini_file:
+      dest: /etc/NetworkManager/NetworkManager.conf
+      section: main
+      option: dns
+      value: none
+      backup: yes
+      owner: root
+      group: root
+      mode: 0644
+    register: netmgr
+    when: ansible_distribution_major_version|int >= 7
+
+  - name: Ensure dns servers are configured in /etc/resolv.conf
+    template:
+      src: templates/resolv.conf.j2
+      dest: /etc/resolv.conf
+      backup: yes
+      owner: root
+      group: root
+      mode: 0644
+      
+  - name: Restart NetworkManger
+    service:
+      name: NetworkManager
+      state: restarted
+      enabled: yes
+    when: netmgr is changed
+
+#
   handlers:
   - name: restart_firewalld
     become: true
