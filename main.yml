@@ -180,6 +180,19 @@
             - libvirt
             - virt-install
             - libvirt-client
+        CentOS:
+          '7':
+            - qemu-kvm
+            - libvirt
+            - libvirt-python
+            - libguestfs-tools
+            - virt-install
+          '8':
+            - qemu-kvm
+            - qemu-img
+            - libvirt
+            - virt-install
+            - libvirt-client
       Debian:
         Debian:
           '20.04':
