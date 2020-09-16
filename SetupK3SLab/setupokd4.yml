@@ -94,25 +94,36 @@
 
   - name: Enable XRDP
     service:
-      name: xrxp
+      name: xrdp
       state: started
       enabled: true
     notify: restart_firewalld
 
   - name: Open up XRDP FW port
     firewalld:
-      service: xrxp
+      port: 3389/tcp
       permanent: true
       state: enabled
     notify: restart_firewalld
 
   # Setup local DNS server
-  - name: Install bind apps
+  - name: Install BIND apps
     become: true
     package:
       name:
         - bind
         - bind-utils
+
+  - name: Create the BIND zones directory
+    file:
+      path: /etc/named/zones
+      state: directory
+      seuser: system_u
+      serole: object_r
+      setype: named_conf_t
+      owner: root
+      group: named
+      mode: 0640
 
   - name: Build named.conf file
     template:
@@ -137,17 +148,18 @@
   - name: Build db.okd.local file
     template:
       src: templates/db.okd.local.j2
-      dest: /etc/named/db.okd.local
-      setype: named_conf_t
+      dest: /etc/named/zones/db.okd.local
       seuser: system_u
       serole: object_r
-      mode: 0640
+      setype: named_conf_t
+      owner: root
       group: named
+      mode: 0640
 
   - name: Build db.subnet file
     template:
       src: templates/db.subnet.j2
-      dest: /etc/named/db.subnet
+      dest: /etc/named/zones/db.subnet
       setype: named_conf_t
       seuser: system_u
       serole: object_r
@@ -281,7 +293,25 @@
       state: restarted
       enabled: yes
     when: netmgr is changed
+#
+  # Install the openshift installer
+  - name: Download OpenShift installers
+    # Latest available from: https://github.com/openshift/okd/releases/
+    get_url:
+      url: "{{ item.src_url }}"
+      dest: "/tmp/{{ item.dest_name }}"
+      checksum: "{{ item.hash }}"
+    with_items:
+      - src_url=https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-04-180756/openshift-client-linux-4.5.0-0.okd-2020-09-04-180756.tar.gz
+        dest_name=openshift-client-linux.tar.gz
+        hash='sha256:b70e7bbee507802a414e0c7ca50f9edaf500c078370e31a3e2e38aa702c34947'
+      - src_url=https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-04-180756/openshift-install-linux-4.5.0-0.okd-2020-09-04-180756.tar.gz
+        dest_name=openshift-install-linux.tar.gz
+        hash='sha256:742e47bd3b09e2338158f4a10c16ec596221edde6cb7224de38634e6a6cf2c7b'
 
+  - name: Extract OpenShift files
+    unarchive:
+      
   handlers:
   - name: restart_firewalld
     become: true
