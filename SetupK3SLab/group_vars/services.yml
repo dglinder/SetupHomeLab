@@ -2,6 +2,11 @@ okd_network: 192.168.65.0/24
 okd_named_db: 192.168.65
 named_zone_db: 65.168.192
 okd_domain: "okd.local"
+okd_bins:
+  - '/tmp/openshift-client-linux/kubectl'
+  - '/tmp/openshift-client-linux/oc'
+  - '/tmp/openshift-install-linux/openshift-install'
+
 okd_files:
   - { src_url: 'https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-04-180756/openshift-client-linux-4.5.0-0.okd-2020-09-04-180756.tar.gz',
     dest_name: 'openshift-client-linux.tar.gz',

@@ -318,6 +318,34 @@
       creates: "/tmp/{{ item.dest_dir }}/{{ item.key_file }}"
       remote_src: yes
     with_items: "{{ okd_files }}"
+
+  - name: Copy binaries to common path
+    copy:
+      remote_src: yes
+      src: "{{ item }}"
+      dest: "/usr/local/bin/"
+      owner: root
+      group: root
+      mode: '0555'
+    with_items: "{{ okd_bins }}"
+
+  - name: Get OC version
+    command: oc version
+    changed_when: false
+    register: oc_version
+
+  - name: Show OC version
+    debug:
+      msg: "OC version: {{ oc_version.stdout }}"
+
+  - name: Get installer version
+    command: openshift-install version
+    changed_when: false
+    register: installer_version
+    
+  - name: Show installer version
+    debug:
+      msg: "OC version: {{ installer_version.stdout }}"
 #
   handlers:
   - name: restart_firewalld
