@@ -177,7 +177,7 @@
       permanent: true
       state: enabled
     notify: restart_firewalld
-#
+
   - name: Get dig okd.local output
     command: dig okd.local
     changed_when: false
@@ -195,8 +195,7 @@
   - name: 'Show dig –x {{ hostvars["okd4-services"].ansible_host }} output'
     debug:
       msg: "OC version: {{ dig2_output.stdout }}"
-  
-  #
+
   # Setup local HAProxy
   - name: Install HAproxy
     become: true
@@ -375,6 +374,109 @@
     debug:
       msg: "OC version: {{ installer_version.stdout }}"
 #
+# Setup the openshift-installer
+  - name: Clean out any old install directory
+    file:
+      state: absent
+      path: /root/install_dir
+
+  - name: Build the install directory
+    file:
+      state: directory
+      path: /root/install_dir
+
+  - name: Build the install config file
+    template:
+      src: templates/install-config.yaml.j2
+      dest: /root/install_dir/install-config.yaml
+      mode: 0640
+      group: named
+      owner: root
+
+  - name: Generate the Kubernetes manifests for the cluster
+    command:
+      cmd: openshift-install create manifests --dir=install_dir/
+      chdir: /root/
+     
+  - name: Prevent Pods from spawning on control plane machines
+    lineinfile:
+      path: /root/install_dir/manifests/cluster-scheduler-02-config.yml
+      regexp: 'mastersSchedulable: true'
+      line: 'mastersSchedulable: False'
+
+  - name: Create ignition-configs
+    command:
+      cmd: openshift-install create ignition-configs --dir=install_dir/
+      chdir: /root/
+#
+# Host ignition and Fedora CoreOS files on the webserver
+  - name: Make okd4 web directory
+    file:
+      state: directory
+      path: /var/www/html/okd4
+
+  - name: Find all Kubernetes install files
+    # https://stackoverflow.com/questions/33543551/is-there-with-fileglob-that-works-remotely-in-ansible
+    find:
+      paths: /root/install_dir/
+      file_type: any
+    register: install_dir_files
+
+  - name: Clean up path
+    set_fact:
+      install_files: "{{ install_dir_files | json_query('files[*].path') }}"
+
+  - name: DEBUG show remote files
+    debug:
+      var: install_files
+
+  - name: Copy install files to web directory
+    copy:
+      src: "{{ item }}"
+      remote_src: yes
+      dest: /var/www/html/okd4/
+      owner: apache
+    with_items: "{{ install_files }}"
+
+  - name: Get the webserver metadata.json file
+    command: curl localhost:8080/okd4/metadata.json
+    changed_when: false
+    register: metadata_output
+
+  - name: Show the webserver metadata.json file
+    debug:
+      msg: "OC version: {{ metadata_output.stdout }}"
+
+#
+# Starting the bootstrap node
+  - name: Show bootstrap node boot info
+    pause:
+      seconds: 1
+      prompt: |
+        coreos.inst.install_dev=/dev/sda 
+        coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
+        coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/bootstrap.ign
+#
+# Starting the control plane nodes
+  - name: Show control plane nodes boot info
+    pause:
+      seconds: 1
+      prompt: |
+        coreos.inst.install_dev=/dev/sda 
+        coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
+        coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/master.ign 
+#
+# Starting the compute nodes
+  - name: Show compute nodes boot info
+    pause:
+      seconds: 1
+      prompt: |
+        coreos.inst.install_dev=/dev/sda 
+        coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
+        coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/worker.ign
+#
+# Monitor the bootstrap installation
+
   handlers:
   - name: restart_firewalld
     become: true
