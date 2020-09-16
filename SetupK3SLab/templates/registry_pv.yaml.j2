@@ -10,4 +10,4 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   nfs:
     path: /var/nfsshare/registry
-    server: {{ hostvars.okd4_services.ansible_default_ipv4.address }}
+    server: {{ hostvars["okd4-services"].ansible_default_ipv4.address }}

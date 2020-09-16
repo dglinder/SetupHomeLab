@@ -1,3 +1,4 @@
 okd_network: 192.168.65.0/24
-okd_named_db: 192.165.65
+okd_named_db: 192.168.65
+named_zone_db: 65.168.192
 okd_domain: "okd.local"
