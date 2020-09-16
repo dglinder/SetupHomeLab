@@ -300,37 +300,24 @@
       checksum: "{{ item.hash }}"
     retries: 5
     delay: 10
-    with_items:
-      - { src_url: 'https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-04-180756/openshift-client-linux-4.5.0-0.okd-2020-09-04-180756.tar.gz',
-          dest_name: 'openshift-client-linux.tar.gz',
-          hash: 'sha256:b70e7bbee507802a414e0c7ca50f9edaf500c078370e31a3e2e38aa702c34947' }
-      - { src_url: 'https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-04-180756/openshift-install-linux-4.5.0-0.okd-2020-09-04-180756.tar.gz',
-          dest_name: 'openshift-install-linux.tar.gz',
-          hash: 'sha256:742e47bd3b09e2338158f4a10c16ec596221edde6cb7224de38634e6a6cf2c7b' }
+    with_items: "{{ okd_files }}"
 
   - name: Create OpenShift extraction directories
     file:
-      path: "/tmp/{{ item.dest_name }}"
+      path: "/tmp/{{ item.dest_dir }}"
       state: directory
       owner: root
       group: root
       mode: 0640
-    with_items:
-      - { src: 'openshift-client-linux.tar.gz',
-          dest_name: 'openshift-client-linux' }
-      - { src: 'openshift-install-linux.tar.gz',
-          dest_name: 'openshift-install-linux'}
+    with_items: "{{ okd_files }}"
 
   - name: Extract OpenShift files
     unarchive:
-      src: "/tmp/{{ item.src }}"
-      dest: "/tmp/{{ item.dest_name }}"
+      src: "/tmp/{{ item.dest_name }}"
+      dest: "/tmp/{{ item.dest_dir }}"
+      creates: "/tmp/{{ item.dest_dir }}/{{ item.key_file }}"
       remote_src: yes
-    with_items:
-      - { src: 'openshift-client-linux.tar.gz',
-          dest_name: 'openshift-client-linux' }
-      - { src: 'openshift-install-linux.tar.gz',
-          dest_name: 'openshift-install-linux'}
+    with_items: "{{ okd_files }}"
 #
   handlers:
   - name: restart_firewalld
