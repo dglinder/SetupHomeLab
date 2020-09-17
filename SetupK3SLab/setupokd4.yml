@@ -259,6 +259,18 @@
       regexp: '^Listen 80'
       line: 'Listen 8080'
 
+  - name: Set SELinux Apache boolean values
+    seboolean:
+      name: httpd_read_user_content 
+      state: yes
+      persistent: yes
+      
+  - name: Enable httpd
+    service:
+      name: httpd
+      state: started
+      enabled: true
+          
   - name: Get curl output
     command: curl localhost:8080
     changed_when: false
@@ -267,19 +279,7 @@
   - name: Show curl output
     debug:
       msg: "OC version: {{ curl_output.stdout }}"
-
-  - name: Set SELinux Apache boolean values
-    seboolean:
-      name: httpd_read_user_content 
-      state: yes
-      persistent: yes
-
-  - name: Enable httpd
-    service:
-      name: httpd
-      state: started
-      enabled: true
-
+        
   - name: Open up OKD4 FW ports
     firewalld:
       port: "{{ item }}"
