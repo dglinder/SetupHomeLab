@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -u
+set -e
+#set -x
+
+# How long to delay before rescanning for inventory
+DEL=5
+
+echo "Starting: $(date)"
+terraform init
+terraform plan
+terraform destroy -auto-approve
+banner 'READY!'
+sleep 5
+echo "Starting build: $(date)"
+time terraform apply -auto-approve
+echo "Inventory right after terraform apply:"
+cat -n inventory
+sleep ${DEL}
+time terraform apply -auto-approve
+echo "Inventory after ${DEL} second delay:"
+cat -n inventory
+banner 'Done.'
+
+echo "Starting setup: $(date)"
+time ansible-playbook -i inventory ./setupokd4.yml -u root
+#time ansible-playbook -i inventory ~/SetupHomeLab/main.yml -u root
+echo "Completed setup: $(date)"
+
