@@ -195,8 +195,8 @@
   - name: 'Show dig –x {{ hostvars["okd4-services"].ansible_host }} output'
     debug:
       msg: "OC version: {{ dig2_output.stdout }}"
-
-  # Setup local HAProxy
+#
+# Setup local HAProxy
   - name: Install HAproxy
     become: true
     package:
@@ -317,8 +317,22 @@
       state: restarted
       enabled: yes
     when: netmgr is changed
+#
+# Install the openshift installer
+  - name: Throw-away OpenShift download
+    # Occasionally the download fails with a look-up error for the first URL
+    # but the second succeds.  Try this download once and ignore failures, then
+    # re-do the downloads again in the next play.
+    # TODO: Look at better handling of this.
+    get_url:
+      url: "{{ item.src_url }}"
+      dest: "/tmp/{{ item.dest_name }}"
+      checksum: "{{ item.hash }}"
+    retries: 5
+    delay: 10
+    ignore_errors: yes
+    with_items: "{{ okd_files }}"
 
-  # Install the openshift installer
   - name: Download OpenShift installers
     # Latest available from: https://github.com/openshift/okd/releases/
     get_url:
@@ -426,10 +440,6 @@
     set_fact:
       install_files: "{{ install_dir_files | json_query('files[*].path') }}"
 
-  - name: DEBUG show remote files
-    debug:
-      var: install_files
-
   - name: Copy install files to web directory
     copy:
       src: "{{ item }}"
@@ -447,7 +457,38 @@
     debug:
       msg: "OC version: {{ metadata_output.stdout }}"
 
-#
+# Download the Fedora CoreOS bare-metal bios image and sig files
+  - name: Throw-away FCOS download
+    # Occasionally the download fails with a look-up error for the first URL
+    # but the second succeds.  Try this download once and ignore failures, then
+    # re-do the downloads again in the next play.
+    # TODO: Look at better handling of this.
+    get_url:
+      url: "{{ item.src_url }}"
+      dest: "{{ item.dest_path }}"
+      checksum: "{{ item.hash }}"
+    retries: 5
+    delay: 10
+    ignore_errors: yes
+    with_items: "{{ fcos_files }}"
+
+  - name: Download Fedora CoreOS files
+    # Latest available from: https://coreos.fedoraproject.org
+    get_url:
+      url: "{{ item.src_url }}"
+      dest: "{{ item.dest_path }}"
+      checksum: "{{ item.hash }}"
+    retries: 5
+    delay: 10
+    with_items: "{{ fcos_files }}"
+
+  - name: Fix file ownership
+    file:
+      owner: apache
+      mode: '0755'
+      path: "{{ item.dest_path }}"
+    with_items: "{{ fcos_files }}"
+
 # Starting the bootstrap node
   - name: Show bootstrap node boot info
     pause:
@@ -456,7 +497,7 @@
         coreos.inst.install_dev=/dev/sda 
         coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
         coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/bootstrap.ign
-#
+
 # Starting the control plane nodes
   - name: Show control plane nodes boot info
     pause:
@@ -465,7 +506,7 @@
         coreos.inst.install_dev=/dev/sda 
         coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
         coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/master.ign 
-#
+
 # Starting the compute nodes
   - name: Show compute nodes boot info
     pause:
@@ -474,7 +515,7 @@
         coreos.inst.install_dev=/dev/sda 
         coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
         coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/worker.ign
-#
+
 # Monitor the bootstrap installation
 
   handlers:
