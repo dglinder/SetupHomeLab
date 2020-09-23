@@ -1,0 +1,90 @@
+---
+# Execute:
+#   ansible-playbook -i inventory ./build_vms.yml
+#
+- name: Build VMs
+  hosts: esx
+  gather_facts: false
+
+  pre_tasks:
+  - name: Add Ansible-VMWare system pre-requisites
+    package:
+      name:
+        - python2-pip
+        - python2-pyvmomi
+      state: installed
+    delegate_to: localhost
+
+  - name: Add Ansible-VMware pre-requisites
+    pip:
+      name: pyvmomi
+      state: present
+#      executable: pip3
+    delegate_to: localhost
+
+  tasks:
+  - name: Create a virtual machine on given ESXi hostname
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      folder: /
+      name: "{{ item.hostname }}"
+      state: poweredoff
+      guest_id: rhel8_64Guest
+      # This is hostname of particular ESXi server on which user wants VM to be deployed
+      esxi_hostname: "{{ esxi_hostname }}"
+      # cdrom:
+      #   type: iso
+      #   iso_path: "[datastore1] /isos/rhel-8.2-x86_64-dvd.iso"
+      disk:
+      - size_gb: "{{ item.disk_size }}"
+        type: thin
+        datastore: "{{ datastore }}"
+      hardware:
+        memory_mb: "{{item.ram_mb}}"
+        num_cpus: "{{item.cpus}}"
+        scsi: paravirtual
+      networks:
+      - name: "{{ item.networks.0.net_loc }}"
+        mac: "{{item.networks.0.macaddr}}"
+        ip: "{{item.networks.0.ipaddress}}"
+        netmask: "{{item.networks.0.netmask}}"
+        device_type: vmxnet3
+      wait_for_ip_address: no
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ vmlist }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - name: "Show systems built"
+    debug:
+      msg: "List of VMs: {{ deploy_vm }}"
+
+  # - name: Create a virtual machine on given ESXi hostname
+  #   vmware_guest:
+  #     hostname: "{{ vcenter_hostname }}"
+  #     username: "{{ vcenter_username }}"
+  #     password: "{{ vcenter_password }}"
+  #     validate_certs: no
+  #     folder: /
+  #     name: TesttTemplate1 #test_vm_0001
+  #     state: poweredoff
+  #     guest_id: rhel8_64Guest
+  #     # This is hostname of particular ESXi server on which user wants VM to be deployed
+  #     esxi_hostname: "{{ esxi_hostname }}"
+  #     is_template: true
+  #     wait_for_ip_address: no
+  #   delegate_to: localhost
+  #   register: deploy_vm
+
+  # - vmware_guest:
+  #     vcenter_hostname: "{{ esxi_ip_or_dns }}" # ip address of hypervisor
+  #     esxi:
+  #       datacenter: ha-datacenter
+  #       hostname: "{{ esxi_hostname }}" # name shown in hypervisor console
+  #     username: "{{ esxi_username }}"
+  #     password: "{{ esxi_password }}"
+

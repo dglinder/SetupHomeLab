@@ -34,3 +34,13 @@ fcos_files:
     dest_path: '/var/www/html/okd4/fcos.raw.xz.sig',
     hash: 'sha256:ac99befb31b6dad38efd62e0680b9c6391342ff5bffed8f5fb80480721d14f7c'
     }
+
+fcos_isos:
+  - {
+    hash: 'sha256:b45e345f33e3ba22bfff5b21b30a371247864c832220a54b143c454078886e4c',
+    src_url: 'https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/32.20200824.3.0/x86_64/fedora-coreos-32.20200824.3.0-live.x86_64.iso'
+    }
+  - {
+    hash: 'sha256:0b8f030c7e83873eb73d617d7e87b60b3286b733bec868b00d417ccd62c27fd7',
+    src_url: 'https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/32.20200824.3.0/x86_64/fedora-coreos-32.20200824.3.0-vmware.x86_64.ova'
+    }
