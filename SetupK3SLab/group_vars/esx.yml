@@ -9,8 +9,13 @@ vswitch: "vSwitch0"
 home_network: "VM Network"
 okd4_network: "OKD"
 
+httpd_ip: "192.168.65.20"
+httpd_port: "80"
+
 bootstrap_info:
   isoname:   "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  kickstart_file: "RHEL8-ks.cfg"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
 
 fwall_info:
   isoname:   "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
