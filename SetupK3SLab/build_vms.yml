@@ -23,7 +23,23 @@
     delegate_to: localhost
 
   tasks:
-  - name: Create a virtual machine on given ESXi hostname
+
+  - name: Clean up bootstrap VM server
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ item.hostname }}"
+      state: absent
+      force: yes
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - name: Create the bootstrap VM server
     vmware_guest:
       hostname: "{{ vcenter_hostname }}"
       username: "{{ vcenter_username }}"
@@ -31,13 +47,14 @@
       validate_certs: no
       folder: /
       name: "{{ item.hostname }}"
-      state: poweredoff
+      state: present
       guest_id: rhel8_64Guest
       # This is hostname of particular ESXi server on which user wants VM to be deployed
       esxi_hostname: "{{ esxi_hostname }}"
-      # cdrom:
-      #   type: iso
-      #   iso_path: "[datastore1] /isos/rhel-8.2-x86_64-dvd.iso"
+      cdrom:
+        type: iso
+        state: present
+        iso_path: "{{ bootstrap_info.isoname }}"
       disk:
       - size_gb: "{{ item.disk_size }}"
         type: thin
@@ -46,6 +63,7 @@
         memory_mb: "{{item.ram_mb}}"
         num_cpus: "{{item.cpus}}"
         scsi: paravirtual
+        boot_firmware: "bios"
       networks:
       - name: "{{ item.networks.0.net_loc }}"
         mac: "{{item.networks.0.macaddr}}"
@@ -55,13 +73,46 @@
       wait_for_ip_address: no
     delegate_to: localhost
     register: deploy_vm
-    loop: '{{ vmlist }}'
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - name: Power on bootstrap VM server
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ item.hostname }}"
+      state: poweredon
+      wait_for_ip_address: no
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - name: Send boot keystrokes
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      folder: /
+      name: "{{ item.hostname }}"
+      keys_send:
+        - ESC
+        - ESC
+      string_send: "this is a test"
+    delegate_to: localhost
+    register: keys_num_sent
+    loop: '{{ bootstrap_vms }}'
     loop_control:
       label: "{{ item.hostname }}"
 
   - name: "Show systems built"
     debug:
-      msg: "List of VMs: {{ deploy_vm }}"
+      var: deploy_vm
 
   # - name: Create a virtual machine on given ESXi hostname
   #   vmware_guest:
@@ -87,4 +138,3 @@
   #       hostname: "{{ esxi_hostname }}" # name shown in hypervisor console
   #     username: "{{ esxi_username }}"
   #     password: "{{ esxi_password }}"
-
