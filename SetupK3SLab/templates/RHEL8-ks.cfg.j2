@@ -1,0 +1,125 @@
+########################################
+#
+# Begin %pre section
+#
+%pre
+# The %pre section is run before parsing the rest of the Kickstart file.
+# This lets us probe the system being kickstarted to get information to use
+# in the kickstart itself.
+
+# Determine the name of the NIC.
+# With the change to "Consistent Device Names" for network interfaces, the
+#   name of the device could be different depending on many variables (kernels,
+#   hardware, virtualization environment, etc).  To account for this, the following
+#   code will determine the active and put that into a variable to use by
+#   the Anaconda 'network' stanza.  The information is later included in the
+#   Anaconda script by including the network.ks file.
+NIC_NAME=$(ip addr | grep -i broadcast | awk '{ print $2 }' | sed 's/://g')
+rm -f /tmp/network.ks
+echo "network  --hostname=Intrado-RHEL-template" >> /tmp/network.ks
+echo "network  --bootproto=dhcp --device=${NIC_NAME} --ipv6=auto --activate --onboot=on" >> /tmp/network.ks
+%end
+#
+# End %pre section
+#
+########################################
+
+# System authorization information
+#auth --enableshadow --passalgo=sha512
+
+# Use CDROM installation media
+cdrom
+
+# Use text install
+text
+
+# Run the Setup Agent on first boot
+firstboot --enable
+ignoredisk --only-use=sda
+
+# Keyboard layouts
+keyboard --vckeymap=us --xlayouts='us'
+
+# System language
+lang en_US.UTF-8
+
+# Network information
+%include /tmp/network.ks
+
+# Initial root password that Hashicorp Packer uses to configure/setup VM template.
+# No real good comes from encrypting this here - the post-deployment
+# steps should lock this down.
+rootpw {{ template_root_pw }}
+
+# System services
+services --enabled="chronyd"
+
+# System timezone
+timezone Etc/GMT --utc --ntpservers=0.pool.ntp.org,1.pool.ntp.org
+
+# Partition clearing information
+clearpart --drives=sda --all
+
+# Initialize any invalid partition tables
+zerombr
+
+# Run the Setup Agent on first boot
+firstboot --disabled
+
+# Setup which drive to install to.
+ignoredisk --only-use=sda
+
+# System bootloader configuration
+bootloader --append=' crashkernel=auto' --location=mbr --boot-drive=sda
+
+# Setup initial boot and physical volume.
+part biosboot   --fstype='biosboot' --size=1
+part /boot      --fstype='ext4'  --ondisk=sda --size=1024
+part /boot/efi  --fstype='efi'   --ondisk=sda --size=200
+part pv.155     --fstype='lvmpv' --ondisk=sda --size=38912 --grow
+
+# Disk partitioning information
+volgroup rootvg --pesize=4096 pv.155
+logvol swap     --fstype="swap" --size=2048  --name=swap   --vgname=rootvg
+logvol /        --fstype="xfs"  --size=1024  --name=rootlv --vgname=rootvg
+logvol /usr     --fstype="xfs"  --size=10240 --name=usrlv  --vgname=rootvg
+logvol /home    --fstype="xfs"  --size=2048  --name=homelv --vgname=rootvg
+logvol /var     --fstype="xfs"  --size=4096  --name=varlv  --vgname=rootvg
+logvol /var/log --fstype="xfs"  --size=5120  --name=loglv  --vgname=rootvg
+logvol /tmp     --fstype="xfs"  --size=4096  --name=tmplv  --vgname=rootvg
+logvol /opt     --fstype="xfs"  --size=2048  --name=optlv  --vgname=rootvg
+
+eula --accept
+
+%packages --ignoremissing
+@core
+kexec-tools
+libedit
+gfdisk
+# Only put in packages that are installable on all systems (physical, virtual)
+# so this kickstart file can be leveraged in all environments for consistency.
+# Include basic ssh tools for communication and remote Ansible work.
+openssh
+openssh-clients
+openssh-server
+sos                # Support debugging tools
+bind-utils         # Include name lookup tools
+nmap
+nmap-ncat
+tcpdump
+vim-common
+curl
+wget
+%end
+%addon com_redhat_kdump --enable --reserve-mb='auto'
+%end
+%post
+hostname | tee -a /root/Kickstart-notes
+date +"%Y-%m-%d_%H:%M:%S - Kickstart-installed Red Hat Linux `/bin/date`" | tee -a /root/Kickstart-notes
+date +"%Y-%m-%d_%H:%M:%S - Mounted filesystems in %post section" | tee -a /root/Kickstart-notes
+df -Ph | tee -a /root/Kickstart-notes
+if grep -i PACKER /proc/cmdline ; then
+  date +"%Y-%m-%d_%H:%M:%S - /proc/cmdline: " $(cat /proc/cmdline) | tee -a /root/Kickstart-notes
+fi
+sync
+%end
