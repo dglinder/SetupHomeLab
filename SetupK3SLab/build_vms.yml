@@ -92,20 +92,38 @@
     loop_control:
       label: "{{ item.hostname }}"
 
-  - name: Send boot keystrokes
+  - pause:
+      seconds: 2
+
+  - name: Send boot configuration
     community.vmware.vmware_guest_sendkey:
       validate_certs: no
       hostname: "{{ vcenter_hostname }}"
       username: "{{ vcenter_username }}"
       password: "{{ vcenter_password }}"
-      folder: /
       name: "{{ item.hostname }}"
       keys_send:
         - ESC
         - ESC
-      string_send: "this is a test"
+      string_send: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL={{ bootstrap_info.iso_label }} inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ bootstrap_info.kickstart_file }}"
     delegate_to: localhost
-    register: keys_num_sent
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - pause:
+      seconds: 2
+
+  - name: Start boot command
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.hostname }}"
+      keys_send:
+        - ENTER
+    delegate_to: localhost
     loop: '{{ bootstrap_vms }}'
     loop_control:
       label: "{{ item.hostname }}"
