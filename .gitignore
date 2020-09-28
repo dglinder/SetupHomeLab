@@ -3,3 +3,4 @@ vault_password
 packer/packer_cache
 terraform.tfstate*
 .terraform/
+*/*.ova
