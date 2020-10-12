@@ -2,26 +2,70 @@
 # Execute:
 #   ansible-playbook -i inventory ./build_vms.yml
 #
-- name: Build VMs
-  hosts: esx
-  gather_facts: false
+- name: Setup builder
+  hosts: localhost
+  gather_facts: true
+  connection: local
+  become: true
 
-  pre_tasks:
+  tasks:
+  # - debug:
+  #     var: ansible_facts
+  # - debug:
+  #     msg: "IP: {{ ansible_facts.default_ipv4.address }}"
+  # - pause:
+  #     seconds: 1000
+  - name: Get local systems IP address
+    set_fact:
+      httpd_ip: "{{ ansible_facts.default_ipv4.address }}"
+      httpd_port: 80
+
+  - name: Install local HTTPD server
+    package:
+      name: httpd
+
+  - name: Start service httpd, if not started
+    service:
+      name: httpd
+      state: started
+
+  - name: Permit httpd traffic
+    firewalld:
+      service: http
+      permanent: yes
+      state: enabled
+
+  - name: reload service firewalld
+    systemd:
+      name: firewalld
+      state: reloaded
+
+  - name: Setup the files for bootstraping systems
+    template:
+      src: ./templates/services_kickstart.j2
+      dest: /var/www/html/services.ks
+      owner: apache
+      group: apache
+      mode: '0644'
+
   - name: Add Ansible-VMWare system pre-requisites
     package:
       name:
         - python2-pip
         - python2-pyvmomi
       state: installed
-    delegate_to: localhost
 
   - name: Add Ansible-VMware pre-requisites
     pip:
       name: pyvmomi
       state: present
-#      executable: pip3
-    delegate_to: localhost
+  # executable: pip3
 
+- name: Build VMs
+  hosts: esx
+  gather_facts: false
+
+# Main tasks to build VMs
   tasks:
 
   - name: Clean up bootstrap VM server
@@ -32,7 +76,7 @@
       validate_certs: no
       name: "{{ item.hostname }}"
       state: absent
-      force: yes
+      force: true
     delegate_to: localhost
     register: deploy_vm
     loop: '{{ bootstrap_vms }}'
@@ -113,8 +157,8 @@
 
   - pause:
       seconds: 2
-      #prompt: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL={{ bootstrap_info.iso_label }} inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ bootstrap_info.kickstart_file }}"
-      #echo: no
+      prompt: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL={{ bootstrap_info.iso_label }} inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ bootstrap_info.kickstart_file }}"
+      echo: no
 
   - name: Start boot command
     community.vmware.vmware_guest_sendkey:

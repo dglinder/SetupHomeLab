@@ -1,3 +1,6 @@
+[builder]
+localhost
+
 [esx]
 esx.lab.linder.org
 

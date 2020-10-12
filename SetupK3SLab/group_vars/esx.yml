@@ -14,7 +14,7 @@ httpd_port: "80"
 
 bootstrap_info:
   isoname:   "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
-  kickstart_file: "RHEL8-ks.cfg"
+  kickstart_file: "services.ks"
   iso_label: "CentOS-8-2-2004-x86_64-dvd"
 
 fwall_info:
