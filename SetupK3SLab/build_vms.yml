@@ -113,6 +113,8 @@
 
   - pause:
       seconds: 2
+      #prompt: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL={{ bootstrap_info.iso_label }} inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ bootstrap_info.kickstart_file }}"
+      #echo: no
 
   - name: Start boot command
     community.vmware.vmware_guest_sendkey:
