@@ -66,8 +66,9 @@ rsync
 -zd1211-firmware
 %end
 
-%post --log=/mnt/sysimage/root/ks-post.log
-# set the IP address
+#%post --log=/mnt/sysimage/root/ks-post.log
+%post --interpreter=/bin/bash --log=/root/ks-post02.log
+date +"%Y-%m-%d_%H:%M:%S - Kickstart-installed Red Hat Linux" | tee -a /root/Kickstart-notes
 
 echo Setting up NIC {{ services_vms[0].networks[0].nicname }} 
 cat << NIC_EOF > /mnt/sysimage/etc/sysconfig/network-scripts/ifcfg-{{ services_vms[0].networks[0].nicname }}
