@@ -89,12 +89,9 @@ IPV6_FAILURE_FATAL="no"
 IPADDR={{ services_vms[0].networks[0].ipaddress }}
 PREFIX={{ services_vms[0].networks[0].bitmask }}
 NIC_EOF
-{# nmcli con down {{ services_vms[0].networks[0].nicname }}
-nmcli con mod {{ services_vms[0].networks[0].nicname }} ipv4.addresses {{ services_vms[0].networks[0].ipaddress }}/{{ services_vms[0].networks[0].bitmask }} #192.168.2.20/24
-nmcli con mod {{ services_vms[0].networks[0].nicname }} ipv4.gateway {{ services_vms[0].def_gw }} # 192.168.2.1
-nmcli con mod {{ services_vms[0].networks[0].nicname }} ipv4.dns {{ services_vms[0].dns }} # "8.8.8.8"
-nmcli con mod {{ services_vms[0].networks[0].nicname }} ipv4.method manual
-nmcli con up {{ services_vms[0].networks[0].nicname }} #}
+
+date +"%Y-%m-%d_%H:%M:%S - Setting hostname to {{ services_vms[0].hostname }}" | tee -a /root/Kickstart-notes
+hostnamectl set-hostname {{ services_vms[0].hostname }}
 
 yum update -y
 
