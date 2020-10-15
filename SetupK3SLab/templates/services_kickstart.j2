@@ -70,8 +70,9 @@ rsync
 %post --interpreter=/bin/bash --log=/root/ks-post02.log
 date +"%Y-%m-%d_%H:%M:%S - Kickstart-installed Red Hat Linux" | tee -a /root/Kickstart-notes
 
+# set the IP address
 echo Setting up NIC {{ services_vms[0].networks[0].nicname }} 
-cat << NIC_EOF > /mnt/sysimage/etc/sysconfig/network-scripts/ifcfg-{{ services_vms[0].networks[0].nicname }}
+cat << NIC_EOF > /etc/sysconfig/network-scripts/ifcfg-{{ services_vms[0].networks[0].nicname }}
 NAME="{{ services_vms[0].networks[0].nicname }}"
 DEVICE="{{ services_vms[0].networks[0].nicname }}"
 ONBOOT="yes"
@@ -94,15 +95,19 @@ NIC_EOF
 date +"%Y-%m-%d_%H:%M:%S - Setting hostname to {{ services_vms[0].hostname }}" | tee -a /root/Kickstart-notes
 hostnamectl set-hostname {{ services_vms[0].hostname }}
 
+date +"%Y-%m-%d_%H:%M:%S - Updating all packages" | tee -a /root/Kickstart-notes
 yum update -y
 
-# update root certs
+date +"%Y-%m-%d_%H:%M:%S - Update root certs" | tee -a /root/Kickstart-notes
 wget -O/etc/pki/tls/certs/ca-bundle.crt http://curl.haxx.se/ca/cacert.pem
 
-# sudo
+date +"%Y-%m-%d_%H:%M:%S - Setup sudo for vagrant user" | tee -a /root/Kickstart-notes
 yum install -y sudo
 echo "vagrant        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers.d/vagrant
 sed -i "s/^.*requiretty/#Defaults requiretty/" /etc/sudoers
 
+date +"%Y-%m-%d_%H:%M:%S - Run yum clean all" | tee -a /root/Kickstart-notes
 yum clean all
+
+date +"%Y-%m-%d_%H:%M:%S - Kickstart post section completed" | tee -a /root/Kickstart-notes
 %end
