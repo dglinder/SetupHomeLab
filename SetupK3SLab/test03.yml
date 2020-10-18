@@ -1,0 +1,179 @@
+#!/usr/bin/env ansible-playbook
+# ansible-galaxy collection install community.vmware
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    vcenter_hostname: "esx.lab.linder.org"
+    esxi_hostname: "{{ vcenter_hostname }}"
+    vcenter_username: "root"
+    vcenter_password: "1234NewS!@#$"
+    vminfo:
+    - name: "services"
+      guest_id: "rhel8_64Guest"
+      iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      nics:
+      - nicname: "VM Network"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.65.140"
+        netmask: "255.255.255.0"
+      - nicname: "OKD"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.1.210"
+        netmask: "255.255.255.0"
+      CPUs: 4
+      RAM: 4096
+      HDD:
+        size: 100
+        datastore: "datastore1"
+
+    vminfo2:
+    - name: "pfsense"
+      guest_id: "rhel8_64Guest"
+      iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      nics:
+      - nicname: "Lab Network"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.65.141"
+        netmask: "255.255.255.0"
+      - nicname: "OKD"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.1.1"
+        netmask: "255.255.255.0"
+      CPUs: 1
+      RAM: 1024
+      HDD:
+        size: 8
+        datastore: "/datastore1"
+
+    - name: "bootstrap"
+      guest_id: "rhel8_64Guest"
+      iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      nics:
+      - nicname: "OKD"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.1.200"
+        netmask: "255.255.255.0"
+      CPUs: 4
+      RAM: 16384
+      HDD:
+        size: 120
+        datastore: "/datastore1"
+
+    - name: "control-plane-1"
+      guest_id: "rhel8_64Guest"
+      iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      nics:
+      - nicname: "OKD"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.1.201"
+        netmask: "255.255.255.0"
+      CPUs: 4
+      RAM: 16384
+      HDD:
+        size: 120
+        datastore: "/datastore1"
+
+    - name: "control-plane-2"
+      guest_id: "rhel8_64Guest"
+      iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      nics:
+      - nicname: "OKD"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.1.202"
+        netmask: "255.255.255.0"
+      CPUs: 4
+      RAM: 16384
+      HDD:
+        size: 120
+        datastore: "/datastore1"
+
+    - name: "control-plane-3"
+      guest_id: "rhel8_64Guest"
+      iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      nics:
+      - nicname: "OKD"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.1.203"
+        netmask: "255.255.255.0"
+      CPUs: 4
+      RAM: 16384
+      HDD:
+        size: 120
+        datastore: "/datastore1"
+
+    - name: "compute-1"
+      guest_id: "rhel8_64Guest"
+      iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      nics:
+      - nicname: "OKD"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.1.204"
+        netmask: "255.255.255.0"
+      CPUs: 4
+      RAM: 16384
+      HDD:
+        size: 120
+        datastore: "/datastore1"
+
+    - name: "compute-2"
+      guest_id: "rhel8_64Guest"
+      iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      nics:
+      - nicname: "OKD"
+        mac: "00:50:56:01:01:10"
+        address: "192.168.1.205"
+        netmask: "255.255.255.0"
+      CPUs: 4
+      RAM: 16384
+      HDD:
+        size: 120
+        datastore: "/datastore1"
+
+  tasks:
+  - name: "List variable"
+    debug:
+      var: vminfo
+
+  - name: "Test the variables"
+    community.vmware.vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      folder: /
+      name: "{{ item.name }}"
+      state: poweredon
+      guest_id: "{{ item.guest_id }}"
+      # This is hostname of particular ESXi server on which user wants VM to be deployed
+      esxi_hostname: "{{ esxi_hostname }}"
+      cdrom:
+      - type: iso
+        state: present
+        iso_path: "{{ item.iso }}"
+      disk:
+      - size_gb: "{{ item.HDD.size }}"
+        type: thin
+        datastore: "{{ item.HDD.datastore }}"
+      hardware:
+        memory_mb: "{{ item.RAM }}"
+        num_cpus: "{{ item.CPUs }}"
+        scsi: paravirtual
+        boot_firmware: "bios"
+      networks:
+      - name: "{{ item.nics[0].nicname }}"
+        mac: "{{ item.nics[0].mac }}"
+        ip: "{{ item.nics[0].address }}"
+        netmask: "{{ item.nics[0].netmask }}"
+        device_type: vmxnet3
+      - name: "{{ item.nics[1].nicname | default(omit) }}"
+        mac: "{{ item.nics[1].mac | default(omit) }}"
+        ip: "{{ item.nics[1].address | default(omit) }}"
+        netmask: "{{ item.nics[1].netmask | default(omit) }}"
+        device_type: vmxnet3
+      wait_for_ip_address: no
+#      wait_for_ip_address_timeout: 600
+    delegate_to: localhost
+    register: deploy_vm
+    loop: "{{ vminfo }}"
+
