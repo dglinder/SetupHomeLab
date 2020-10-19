@@ -12,6 +12,7 @@
     vminfo:
     - name: "services"
       guest_id: "rhel8_64Guest"
+      in_group: "services"
       kickstart_template: "services.ks.j2"
       kickstart_file: "services.ks"
       iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
@@ -37,6 +38,7 @@
     vminfo2:
     - name: "pfsense"
       guest_id: "rhel8_64Guest"
+      groups: "pfsense"
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "Lab Network"
@@ -55,6 +57,7 @@
 
     - name: "bootstrap"
       guest_id: "rhel8_64Guest"
+      groups: "bootstrap"
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "OKD"
@@ -69,6 +72,7 @@
 
     - name: "control-plane-1"
       guest_id: "rhel8_64Guest"
+      groups: "control-plane"
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "OKD"
@@ -83,6 +87,7 @@
 
     - name: "control-plane-2"
       guest_id: "rhel8_64Guest"
+      groups: "control-plane"
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "OKD"
@@ -97,6 +102,7 @@
 
     - name: "control-plane-3"
       guest_id: "rhel8_64Guest"
+      groups: "control-plane"
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "OKD"
@@ -111,6 +117,7 @@
 
     - name: "compute-1"
       guest_id: "rhel8_64Guest"
+      groups: "compute"
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "OKD"
@@ -125,6 +132,7 @@
 
     - name: "compute-2"
       guest_id: "rhel8_64Guest"
+      groups: "compute"
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "OKD"
@@ -231,7 +239,6 @@
     wait_for:
       port: 22
       host: '{{ item.nics[0].address }}'
-      #delay: 10
       timeout: 900
     connection: local
     loop: '{{ vminfo }}'
@@ -244,12 +251,13 @@
       ansible_host: "{{ item.nics[0].address }}"
       ansible_user: root
       ansible_password: "{{ root_passwd }}"
-      groups: newvms
+      groups:
+      - "{{ item.in_group }}"
     loop: '{{ vminfo }}'
     loop_control:
       label: "{{ item.name }}"
 
-- hosts: newvms
+- hosts: services #newvms
   gather_facts: true
   remote_user: vagrant
 
