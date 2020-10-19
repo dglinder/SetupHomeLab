@@ -2,7 +2,7 @@
 # ansible-galaxy collection install community.vmware
 ---
 - hosts: localhost
-  gather_facts: false
+  gather_facts: true
   vars:
     vcenter_hostname: "esx.lab.linder.org"
     esxi_hostname: "{{ vcenter_hostname }}"
@@ -11,9 +11,17 @@
     vminfo:
     - name: "services"
       guest_id: "rhel8_64Guest"
+      kickstart_template: "services.ks.j2"
+      kickstart_file: "services.ks"
       iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+      iso_label: "CentOS-8-2-2004-x86_64-dvd"
+      #boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=_ISO_LABEL_ inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/_KICKSTART_FILE_"
+      boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+      defgw: "192.168.65.1"
+      dns: "192.168.65.7"
       nics:
       - nicname: "VM Network"
+        nic_number: "ens192"
         mac: "00:50:56:01:01:10"
         address: "192.168.65.140"
         netmask: "255.255.255.0"
@@ -33,6 +41,7 @@
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "Lab Network"
+        nic_number: "ens192"
         mac: "00:50:56:01:01:10"
         address: "192.168.65.141"
         netmask: "255.255.255.0"
@@ -131,11 +140,12 @@
         datastore: "/datastore1"
 
   tasks:
-  - name: "List variable"
-    debug:
-      var: vminfo
+  - name: "Bring in HTTPD server info from earlier task"
+    set_fact:
+      httpd_ip: "{{ ansible_facts.default_ipv4.address }}"
+      httpd_port: 80
 
-  - name: "Test the variables"
+  - name: "Build VM objects"
     community.vmware.vmware_guest:
       hostname: "{{ vcenter_hostname }}"
       username: "{{ vcenter_username }}"
@@ -145,12 +155,13 @@
       name: "{{ item.name }}"
       state: poweredon
       guest_id: "{{ item.guest_id }}"
-      # This is hostname of particular ESXi server on which user wants VM to be deployed
       esxi_hostname: "{{ esxi_hostname }}"
       cdrom:
       - type: iso
         state: present
         iso_path: "{{ item.iso }}"
+        controller_number: 0
+        unit_number: 0
       disk:
       - size_gb: "{{ item.HDD.size }}"
         type: thin
@@ -172,8 +183,49 @@
         netmask: "{{ item.nics[1].netmask | default(omit) }}"
         device_type: vmxnet3
       wait_for_ip_address: no
-#      wait_for_ip_address_timeout: 600
-    delegate_to: localhost
+    #delegate_to: localhost
     register: deploy_vm
     loop: "{{ vminfo }}"
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Setup kickstart files"
+    template:
+      src: "./templates/{{ item.kickstart_template }}"
+      dest: "/var/www/html/{{ item.kickstart_file }}"
+      owner: apache
+      group: apache
+      mode: '0644'
+    become: true
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Send boot configuration"
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.name }}"
+      keys_send:
+        - ESC
+        - ESC
+      string_send: "{{ item.boot_string | replace('_HTTPD_IP_',httpd_ip) | replace('_HTTPD_PORT_',httpd_port) }}"
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Start boot from ISO"
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.name }}"
+      keys_send:
+        - ENTER
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
 

@@ -2,7 +2,7 @@ install
 cdrom
 lang en_US.UTF-8
 keyboard us
-network --bootproto=dhcp
+network --bootproto=static --ip={{ item.nics[0].address }} --netmask={{ item.nics[0].netmask }} --gateway={{ item.defgw }} --nameserver={{ item.dns }}
 rootpw Today123!
 firewall --disabled
 selinux --permissive
@@ -69,28 +69,6 @@ rsync
 #%post --log=/mnt/sysimage/root/ks-post.log
 %post --interpreter=/bin/bash --log=/root/ks-post02.log
 date +"%Y-%m-%d_%H:%M:%S - Kickstart-installed Red Hat Linux"
-
-# set the IP address
-echo Setting up NIC {{ item.nics[0].nic_number }} 
-cat << NIC_EOF > /etc/sysconfig/network-scripts/ifcfg-{{ item.nics[0].nic_number }}
-NAME="{{ item.nics[0].nic_number }}"
-DEVICE="{{ item.nics[0].nic_number }}"
-ONBOOT="yes"
-NETBOOT="yes"
-#UUID="addb357e-fa58-4eb9-88ed-3e7e118bb264"
-IPV6INIT="no"
-BOOTPROTO="none"
-TYPE="Ethernet"
-PROXY_METHOD="none"
-BROWSER_ONLY="no"
-DEFROUTE="yes"
-IPV4_FAILURE_FATAL="no"
-IPV6_AUTOCONF="yes"
-IPV6_DEFROUTE="yes"
-IPV6_FAILURE_FATAL="no"
-IPADDR={{ item.nics[0].ipaddress }}
-PREFIX={{ item.nics[0].bitmask }}
-NIC_EOF
 
 date +"%Y-%m-%d_%H:%M:%S - Setting hostname to {{ item.name }}"
 hostnamectl set-hostname {{ item.name }}
