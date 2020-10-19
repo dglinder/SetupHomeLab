@@ -72,7 +72,7 @@ rsync
 -zd1211-firmware
 %end
 
-#%post --log=/mnt/sysimage/root/ks-post.log
+{#
 %post --interpreter=/bin/bash --log=/root/ks-post02.log
 date +"%Y-%m-%d_%H:%M:%S - Kickstart-installed Red Hat Linux"
 
@@ -95,3 +95,4 @@ yum clean all
 
 date +"%Y-%m-%d_%H:%M:%S - Kickstart post section completed"
 %end
+#}
