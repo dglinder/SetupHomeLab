@@ -4,6 +4,7 @@
 - hosts: localhost
   gather_facts: true
   vars:
+    root_passwd: "Today123!"
     vcenter_hostname: "esx.lab.linder.org"
     esxi_hostname: "{{ vcenter_hostname }}"
     vcenter_username: "root"
@@ -15,13 +16,11 @@
       kickstart_file: "services.ks"
       iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       iso_label: "CentOS-8-2-2004-x86_64-dvd"
-      #boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=_ISO_LABEL_ inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/_KICKSTART_FILE_"
       boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
       defgw: "192.168.65.1"
       dns: "192.168.65.7"
       nics:
       - nicname: "VM Network"
-        nic_number: "ens192"
         mac: "00:50:56:01:01:10"
         address: "192.168.65.140"
         netmask: "255.255.255.0"
@@ -41,7 +40,6 @@
       iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
       nics:
       - nicname: "Lab Network"
-        nic_number: "ens192"
         mac: "00:50:56:01:01:10"
         address: "192.168.65.141"
         netmask: "255.255.255.0"
@@ -140,7 +138,7 @@
         datastore: "/datastore1"
 
   tasks:
-  - name: "Bring in HTTPD server info from earlier task"
+  - name: "Bring in HTTPD server info"
     set_fact:
       httpd_ip: "{{ ansible_facts.default_ipv4.address }}"
       httpd_port: 80
@@ -229,3 +227,32 @@
     loop_control:
       label: "{{ item.name }}"
 
+  - name: "Wait for SSH to come up"
+    wait_for:
+      port: 22
+      host: '{{ item.nics[0].address }}'
+      #delay: 10
+      timeout: 900
+    connection: local
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Add new hosts"
+    add_host:
+      name: "{{ item.name }}"
+      ansible_host: "{{ item.nics[0].address }}"
+      ansible_user: root
+      ansible_password: "{{ root_passwd }}"
+      groups: newvms
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+- hosts: newvms
+  gather_facts: true
+  remote_user: vagrant
+
+  tasks:
+  - name: "Ping new hosts"
+    ping:
