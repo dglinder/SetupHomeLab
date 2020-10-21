@@ -1,0 +1,133 @@
+root_passwd: "Today123!"
+vcenter_hostname: "esx.lab.linder.org"
+esxi_hostname: "{{ vcenter_hostname }}"
+vcenter_username: "root"
+vcenter_password: "1234NewS!@#$"
+vminfo:
+- name: "services"
+  guest_id: "rhel8_64Guest"
+  in_group: "services"
+  kickstart_template: "services.ks.j2"
+  kickstart_file: "services.ks"
+  iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+  defgw: "192.168.65.1"
+  dns: "192.168.65.7"
+  nics:
+  - nicname: "VM Network"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.65.140"
+    netmask: "255.255.255.0"
+  - nicname: "OKD"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.1.210"
+    netmask: "255.255.255.0"
+  CPUs: 4
+  RAM: 4096
+  HDD:
+    size: 100
+    datastore: "datastore1"
+vminfo2:
+- name: "pfsense"
+  guest_id: "rhel8_64Guest"
+  groups: "pfsense"
+  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  nics:
+  - nicname: "Lab Network"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.65.141"
+    netmask: "255.255.255.0"
+  - nicname: "OKD"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.1.1"
+    netmask: "255.255.255.0"
+  CPUs: 1
+  RAM: 1024
+  HDD:
+    size: 8
+    datastore: "/datastore1"
+- name: "bootstrap"
+  guest_id: "rhel8_64Guest"
+  groups: "bootstrap"
+  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  nics:
+  - nicname: "OKD"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.1.200"
+    netmask: "255.255.255.0"
+  CPUs: 4
+  RAM: 16384
+  HDD:
+    size: 120
+    datastore: "/datastore1"
+- name: "control-plane-1"
+  guest_id: "rhel8_64Guest"
+  groups: "control-plane"
+  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  nics:
+  - nicname: "OKD"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.1.201"
+    netmask: "255.255.255.0"
+  CPUs: 4
+  RAM: 16384
+  HDD:
+    size: 120
+    datastore: "/datastore1"
+- name: "control-plane-2"
+  guest_id: "rhel8_64Guest"
+  groups: "control-plane"
+  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  nics:
+  - nicname: "OKD"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.1.202"
+    netmask: "255.255.255.0"
+  CPUs: 4
+  RAM: 16384
+  HDD:
+    size: 120
+    datastore: "/datastore1"
+- name: "control-plane-3"
+  guest_id: "rhel8_64Guest"
+  groups: "control-plane"
+  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  nics:
+  - nicname: "OKD"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.1.203"
+    netmask: "255.255.255.0"
+  CPUs: 4
+  RAM: 16384
+  HDD:
+    size: 120
+    datastore: "/datastore1"
+- name: "compute-1"
+  guest_id: "rhel8_64Guest"
+  groups: "compute"
+  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  nics:
+  - nicname: "OKD"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.1.204"
+    netmask: "255.255.255.0"
+  CPUs: 4
+  RAM: 16384
+  HDD:
+    size: 120
+    datastore: "/datastore1"
+- name: "compute-2"
+  guest_id: "rhel8_64Guest"
+  groups: "compute"
+  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  nics:
+  - nicname: "OKD"
+    mac: "00:50:56:01:01:10"
+    address: "192.168.1.205"
+    netmask: "255.255.255.0"
+  CPUs: 4
+  RAM: 16384
+  HDD:
+    size: 120
+    datastore: "/datastore1"
