@@ -18,6 +18,8 @@ firstboot --disabled
 eula --agreed
 services --enabled=NetworkManager,sshd
 user --name=vagrant --plaintext --password=vagrant --groups=wheel
+sshkey --username=vagrant "{{ initial_sshkey }}"
+sshkey --username=root "{{ initial_sshkey }}"
 reboot
 
 %packages --ignoremissing --excludedocs

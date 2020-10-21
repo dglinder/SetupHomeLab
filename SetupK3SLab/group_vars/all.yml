@@ -3,6 +3,7 @@ vcenter_hostname: "esx.lab.linder.org"
 esxi_hostname: "{{ vcenter_hostname }}"
 vcenter_username: "root"
 vcenter_password: "1234NewS!@#$"
+initial_sshkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKDnvLrwffOBQ6FYCu8NpJ/rDwIfsQSVVHvf3Dk5dqud dan@anssrv"
 vminfo:
 - name: "okd4-services"
   guest_id: "rhel8_64Guest"
