@@ -109,8 +109,7 @@
       ansible_host: "{{ item.nics[0].address }}"
       ansible_user: root
       ansible_password: "{{ root_passwd }}"
-      groups:
-      - "{{ item.in_group }}"
+      groups: "{{ item.in_group }}"
     loop: '{{ vminfo }}'
     loop_control:
       label: "{{ item.name }}"
