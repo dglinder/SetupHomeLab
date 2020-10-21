@@ -93,6 +93,15 @@
     loop_control:
       label: "{{ item.name }}"
 
+  - name: "Clean up local known hosts"
+    known_hosts:
+      path: /home/dan/.ssh/known_hosts
+      state: absent
+      name: "{{ item.nics[0].address }}"
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
   - name: "Wait for SSH to come up"
     wait_for:
       port: 22
