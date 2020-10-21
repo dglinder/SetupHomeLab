@@ -4,9 +4,9 @@ esxi_hostname: "{{ vcenter_hostname }}"
 vcenter_username: "root"
 vcenter_password: "1234NewS!@#$"
 vminfo:
-- name: "services"
+- name: "okd4-services"
   guest_id: "rhel8_64Guest"
-  in_group: "services"
+  in_group: [ "services", "newvms" ]
   kickstart_template: "services.ks.j2"
   kickstart_file: "services.ks"
   iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
