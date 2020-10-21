@@ -4,6 +4,7 @@ esxi_hostname: "{{ vcenter_hostname }}"
 vcenter_username: "root"
 vcenter_password: "1234NewS!@#$"
 initial_sshkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKDnvLrwffOBQ6FYCu8NpJ/rDwIfsQSVVHvf3Dk5dqud dan@anssrv"
+
 vminfo:
 - name: "okd4-services"
   guest_id: "rhel8_64Guest"
@@ -29,13 +30,19 @@ vminfo:
   HDD:
     size: 100
     datastore: "datastore1"
-vminfo2:
-- name: "pfsense"
+
+- name: "okd4-pfsense"
   guest_id: "rhel8_64Guest"
-  groups: "pfsense"
-  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  in_group: [ "pfsense", "newvms" ]
+  kickstart_template: "services.ks.j2"
+  kickstart_file: "services.ks"
+  iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+  defgw: "192.168.65.1"
+  dns: "192.168.65.7"
   nics:
-  - nicname: "Lab Network"
+  - nicname: "VM Network"
     mac: "00:50:56:01:01:10"
     address: "192.168.65.141"
     netmask: "255.255.255.0"
@@ -47,11 +54,18 @@ vminfo2:
   RAM: 1024
   HDD:
     size: 8
-    datastore: "/datastore1"
-- name: "bootstrap"
+    datastore: "datastore1"
+
+- name: "okd4-bootstrap"
   guest_id: "rhel8_64Guest"
-  groups: "bootstrap"
-  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  in_group: [ "bootstrap", "newvms" ]
+  kickstart_template: "services.ks.j2"
+  kickstart_file: "services.ks"
+  iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+  defgw: "192.168.65.1"
+  dns: "192.168.65.7"
   nics:
   - nicname: "OKD"
     mac: "00:50:56:01:01:10"
@@ -61,11 +75,18 @@ vminfo2:
   RAM: 16384
   HDD:
     size: 120
-    datastore: "/datastore1"
-- name: "control-plane-1"
+    datastore: "datastore1"
+
+- name: "okd4-control-plane-1"
   guest_id: "rhel8_64Guest"
-  groups: "control-plane"
-  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  in_group: [ "control-plane", "newvms" ]
+  kickstart_template: "services.ks.j2"
+  kickstart_file: "services.ks"
+  iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+  defgw: "192.168.65.1"
+  dns: "192.168.65.7"
   nics:
   - nicname: "OKD"
     mac: "00:50:56:01:01:10"
@@ -75,11 +96,18 @@ vminfo2:
   RAM: 16384
   HDD:
     size: 120
-    datastore: "/datastore1"
-- name: "control-plane-2"
+    datastore: "datastore1"
+
+- name: "okd4-control-plane-2"
   guest_id: "rhel8_64Guest"
-  groups: "control-plane"
-  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  in_group: [ "control-plane", "newvms" ]
+  kickstart_template: "services.ks.j2"
+  kickstart_file: "services.ks"
+  iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+  defgw: "192.168.65.1"
+  dns: "192.168.65.7"
   nics:
   - nicname: "OKD"
     mac: "00:50:56:01:01:10"
@@ -89,11 +117,18 @@ vminfo2:
   RAM: 16384
   HDD:
     size: 120
-    datastore: "/datastore1"
-- name: "control-plane-3"
+    datastore: "datastore1"
+
+- name: "okd4-control-plane-3"
   guest_id: "rhel8_64Guest"
-  groups: "control-plane"
-  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  in_group: [ "control-plane", "newvms" ]
+  kickstart_template: "services.ks.j2"
+  kickstart_file: "services.ks"
+  iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+  defgw: "192.168.65.1"
+  dns: "192.168.65.7"
   nics:
   - nicname: "OKD"
     mac: "00:50:56:01:01:10"
@@ -103,11 +138,18 @@ vminfo2:
   RAM: 16384
   HDD:
     size: 120
-    datastore: "/datastore1"
-- name: "compute-1"
+    datastore: "datastore1"
+
+- name: "okd4-compute-1"
   guest_id: "rhel8_64Guest"
-  groups: "compute"
-  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  in_group: [ "compute", "newvms" ]
+  kickstart_template: "services.ks.j2"
+  kickstart_file: "services.ks"
+  iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+  defgw: "192.168.65.1"
+  dns: "192.168.65.7"
   nics:
   - nicname: "OKD"
     mac: "00:50:56:01:01:10"
@@ -117,11 +159,18 @@ vminfo2:
   RAM: 16384
   HDD:
     size: 120
-    datastore: "/datastore1"
-- name: "compute-2"
+    datastore: "datastore1"
+
+- name: "okd4-compute-2"
   guest_id: "rhel8_64Guest"
-  groups: "compute"
-  iso: "isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  in_group: [ "compute", "newvms" ]
+  kickstart_template: "services.ks.j2"
+  kickstart_file: "services.ks"
+  iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/services.ks"
+  defgw: "192.168.65.1"
+  dns: "192.168.65.7"
   nics:
   - nicname: "OKD"
     mac: "00:50:56:01:01:10"
@@ -131,4 +180,4 @@ vminfo2:
   RAM: 16384
   HDD:
     size: 120
-    datastore: "/datastore1"
+    datastore: "datastore1"
