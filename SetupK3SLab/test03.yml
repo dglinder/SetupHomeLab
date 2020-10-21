@@ -65,6 +65,10 @@
     loop_control:
       label: "{{ item.name }}"
 
+  - name: "Wait for ISO to boot"
+    pause:
+      seconds: 20
+
   - name: "Send boot configuration"
     community.vmware.vmware_guest_sendkey:
       validate_certs: no
@@ -75,10 +79,14 @@
       keys_send:
         - ESC
         - ESC
-      string_send: "{{ item.boot_string | replace('_HTTPD_IP_',httpd_ip) | replace('_HTTPD_PORT_',httpd_port) }}"
+      string_send: "{{ item.boot_string | replace('_HTTPD_IP_',httpd_ip) | replace('_HTTPD_PORT_',httpd_port) | replace('_KS_FILE_',item.kickstart_file) }}"
     loop: '{{ vminfo }}'
     loop_control:
       label: "{{ item.name }}"
+
+  - name: "Wait for kickstart"
+    pause:
+      seconds: 20
 
   - name: "Start boot from ISO"
     community.vmware.vmware_guest_sendkey:
