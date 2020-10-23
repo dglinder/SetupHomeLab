@@ -35,19 +35,8 @@
         num_cpus: "{{ item.CPUs }}"
         scsi: paravirtual
         boot_firmware: "bios"
-      networks:
-      - name: "{{ item.nics[0].nicname }}"
-        mac: "{{ item.nics[0].mac }}"
-        ip: "{{ item.nics[0].address }}"
-        netmask: "{{ item.nics[0].netmask }}"
-        device_type: vmxnet3
-      # - name: "{{ item.nics[1].nicname | default(omit) }}"
-      #   mac: "{{ item.nics[1].mac | default(omit) }}"
-      #   ip: "{{ item.nics[1].address | default(omit) }}"
-      #   netmask: "{{ item.nics[1].netmask | default(omit) }}"
-      #   device_type: vmxnet3
+      networks: "{{ item.nics }}"
       wait_for_ip_address: no
-    #delegate_to: localhost
     register: deploy_vm
     loop: "{{ vminfo }}"
     loop_control:
