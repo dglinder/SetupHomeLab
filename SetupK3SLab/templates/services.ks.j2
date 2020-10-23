@@ -2,7 +2,7 @@ install
 cdrom
 lang en_US.UTF-8
 keyboard us
-network --bootproto=static --ip={{ item.nics[0].address }} --netmask={{ item.nics[0].netmask }} --gateway={{ item.defgw }} --nameserver={{ item.dns }} --hostname {{ item.name }}
+network --bootproto=static --ip={{ item.nics[0].ip }} --netmask={{ item.nics[0].netmask }} --gateway={{ item.defgw }} --nameserver={{ item.dns }} --hostname {{ item.name }}
 rootpw {{ root_passwd }}
 firewall --disabled
 selinux --permissive

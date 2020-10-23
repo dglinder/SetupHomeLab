@@ -17,14 +17,16 @@ vminfo:
   defgw: "192.168.65.1"
   dns: "192.168.65.7"
   nics:
-  - nicname: "VM Network"
+  - name: "VM Network"
     mac: "00:50:56:01:00:10"
-    address: "192.168.65.140"
+    ip: "192.168.65.140"
     netmask: "255.255.255.0"
-  - nicname: "OKD"
+    device_type: "vmxnet3"
+  - name: "OKD"
     mac: "00:50:56:01:01:10"
-    address: "192.168.1.210"
+    ip: "192.168.1.210"
     netmask: "255.255.255.0"
+    device_type: "vmxnet3"
   CPUs: 4
   RAM: 4096
   HDD:
@@ -42,14 +44,16 @@ vminfo:
   defgw: "192.168.65.1"
   dns: "192.168.65.7"
   nics:
-  - nicname: "VM Network"
+  - name: "VM Network"
     mac: "00:50:56:01:00:11"
-    address: "192.168.65.141"
+    ip: "192.168.65.141"
     netmask: "255.255.255.0"
-  - nicname: "OKD"
+    device_type: "vmxnet3"
+  - name: "OKD"
     mac: "00:50:56:01:01:11"
-    address: "192.168.1.1"
+    ip: "192.168.1.1"
     netmask: "255.255.255.0"
+    device_type: "vmxnet3"
   CPUs: 1
   RAM: 1024
   HDD:
@@ -67,16 +71,18 @@ vminfo:
   defgw: "192.168.65.1"
   dns: "192.168.65.7"
   nics:
-  - nicname: "OKD"
+  - name: "OKD"
     mac: "00:50:56:01:01:12"
-    address: "192.168.1.200"
+    ip: "192.168.1.200"
     netmask: "255.255.255.0"
+    device_type: "vmxnet3"
   CPUs: 4
   RAM: 16384
   HDD:
     size: 120
     datastore: "datastore1"
 
+vminfo2:
 - name: "okd4-control-plane-1"
   guest_id: "rhel8_64Guest"
   in_group: [ "control-plane", "newvms" ]
@@ -88,7 +94,7 @@ vminfo:
   defgw: "192.168.65.1"
   dns: "192.168.65.7"
   nics:
-  - nicname: "OKD"
+  - name: "OKD"
     mac: "00:50:56:01:01:13"
     address: "192.168.1.201"
     netmask: "255.255.255.0"
@@ -109,7 +115,7 @@ vminfo:
   defgw: "192.168.65.1"
   dns: "192.168.65.7"
   nics:
-  - nicname: "OKD"
+  - name: "OKD"
     mac: "00:50:56:01:01:14"
     address: "192.168.1.202"
     netmask: "255.255.255.0"
@@ -130,7 +136,7 @@ vminfo:
   defgw: "192.168.65.1"
   dns: "192.168.65.7"
   nics:
-  - nicname: "OKD"
+  - name: "OKD"
     mac: "00:50:56:01:01:15"
     address: "192.168.1.203"
     netmask: "255.255.255.0"
@@ -151,7 +157,7 @@ vminfo:
   defgw: "192.168.65.1"
   dns: "192.168.65.7"
   nics:
-  - nicname: "OKD"
+  - name: "OKD"
     mac: "00:50:56:01:01:16"
     address: "192.168.1.204"
     netmask: "255.255.255.0"
@@ -172,7 +178,7 @@ vminfo:
   defgw: "192.168.65.1"
   dns: "192.168.65.7"
   nics:
-  - nicname: "OKD"
+  - name: "OKD"
     mac: "00:50:56:01:01:17"
     address: "192.168.1.205"
     netmask: "255.255.255.0"

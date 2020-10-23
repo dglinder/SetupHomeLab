@@ -94,7 +94,7 @@
     known_hosts:
       path: /home/dan/.ssh/known_hosts
       state: absent
-      name: "{{ item.nics[0].address }}"
+      name: "{{ item.nics[0].ip }}"
     loop: '{{ vminfo }}'
     loop_control:
       label: "{{ item.name }}"
@@ -102,7 +102,7 @@
   - name: "Wait for SSH to come up"
     wait_for:
       port: 22
-      host: '{{ item.nics[0].address }}'
+      host: '{{ item.nics[0].ip }}'
       timeout: 900
     connection: local
     loop: '{{ vminfo }}'
@@ -112,7 +112,7 @@
   - name: "Add new hosts"
     add_host:
       name: "{{ item.name }}"
-      ansible_host: "{{ item.nics[0].address }}"
+      ansible_host: "{{ item.nics[0].ip }}"
       ansible_user: root
       ansible_password: "{{ root_passwd }}"
       groups: "{{ item.in_group }}"
