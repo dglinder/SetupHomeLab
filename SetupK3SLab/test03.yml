@@ -95,7 +95,7 @@
 
   - name: "Wait for ISO to boot"
     pause:
-      seconds: 20
+      seconds: 10
 
   - name: "Send boot configuration"
     community.vmware.vmware_guest_sendkey:
@@ -114,7 +114,7 @@
 
   - name: "Wait for kickstart"
     pause:
-      seconds: 20
+      seconds: 10
 
   - name: "Start boot from ISO"
     community.vmware.vmware_guest_sendkey:
