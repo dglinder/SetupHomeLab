@@ -159,7 +159,7 @@
     loop_control:
       label: "{{ item.name }}"
 
-- hosts: services #newvms
+- hosts: newvms
   gather_facts: true
   remote_user: vagrant
 
