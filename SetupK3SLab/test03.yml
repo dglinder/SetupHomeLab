@@ -4,6 +4,45 @@
 - hosts: localhost
   gather_facts: true
   tasks:
+  - name: Install local HTTPD server
+    package:
+      name: httpd
+
+  - name: Start service httpd, if not started
+    service:
+      name: httpd
+      state: started
+    become: true
+
+  - name: Permit httpd traffic
+    firewalld:
+      service: http
+      permanent: yes
+      state: enabled
+    register: reload_fw
+    become: true
+
+  - name: reload service firewalld
+    systemd:
+      name: firewalld
+      state: reloaded
+    when: reload_fw is changed
+    become: true
+
+  - name: Add Ansible-VMWare system pre-requisites
+    package:
+      name:
+        - python2-pip
+        - python2-pyvmomi
+      state: installed
+    become: true
+
+  - name: Add Ansible-VMware pre-requisites
+    pip:
+      name: pyvmomi
+      state: present
+  # executable: pip3
+
   - name: "Bring in HTTPD server info"
     set_fact:
       httpd_ip: "{{ ansible_facts.default_ipv4.address }}"
