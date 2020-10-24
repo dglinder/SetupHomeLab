@@ -68,7 +68,7 @@ vminfo:
   iso: "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
   iso_label: "CentOS-8-2-2004-x86_64-dvd"
   boot_string: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL=CentOS-8-2-2004-x86_64-dvd inst.ks=http://_HTTPD_IP_:_HTTPD_PORT_/_KS_FILE_"
-  defgw: "192.168.65.1"
+  defgw: "192.168.1.1"
   dns: "192.168.65.7"
   nics:
   - name: "OKD"
