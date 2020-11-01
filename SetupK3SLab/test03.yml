@@ -378,6 +378,12 @@
     register: reload_fw
     become: true
 
+  - name: "Test local web server availability"
+    changed_when: false
+    command:
+      warn: false  # Ansible complains when we use commands it has as modules
+      cmd: "curl localhost:8080"
+
   - name: "Setup local OpenShift download directory"
     file:
       state: directory
