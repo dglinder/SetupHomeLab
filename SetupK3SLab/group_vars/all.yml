@@ -14,10 +14,12 @@ vcenter_password: !vault |
 initial_sshkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKDnvLrwffOBQ6FYCu8NpJ/rDwIfsQSVVHvf3Dk5dqud dan@anssrv"
 
 openshift_tars:
-  - src: "https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-07-29-070316/openshift-client-linux-4.5.0-0.okd-2020-07-29-070316.tar.gz"
-    dest: "/tmp/openshift-client/"
   - src: "https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-07-29-070316/openshift-install-linux-4.5.0-0.okd-2020-07-29-070316.tar.gz"
+    file_name: "openshift-install-linux.tar.gz"
     dest: "/tmp/openshift-install/"
+  - src: "https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-07-29-070316/openshift-client-linux-4.5.0-0.okd-2020-07-29-070316.tar.gz"
+    file_name: "openshift-client-linux.tar.gz"
+    dest: "/tmp/openshift-client/"
 
 vminfo:
 - name: "okd4-services"
