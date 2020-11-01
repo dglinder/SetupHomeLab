@@ -283,6 +283,7 @@
     changed_when: false
     command:
       cmd: "{{ item }}"
+      warn: false  # Ansible complains when we use commands it has as modules
     register: dns_test
     loop:
       - "dig okd.local"
@@ -380,6 +381,7 @@
   - name: "Test local DNS resolution"
     changed_when: false
     command:
+      warn: false  # Ansible complains when we use commands it has as modules
       cmd: "curl localhost:8080"
 
   - name: "Setup OpenShift download directory"
