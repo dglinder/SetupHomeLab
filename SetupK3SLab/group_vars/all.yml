@@ -2,7 +2,15 @@ root_passwd: "Today123!"
 vcenter_hostname: "esx.lab.linder.org"
 esxi_hostname: "{{ vcenter_hostname }}"
 vcenter_username: "root"
-vcenter_password: "1234NewS!@#$"
+#ansible-vault encrypt_string --vault-password-file .vault_password '1234NewS!@#$' --name 'vcenter_password'
+vcenter_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          34633563396637646161346132653034353233333538656438646238346366666433653361323862
+          6439653966313835656131313031373861623632323938310a346539313533613430653538333639
+          30356531343332373763383432643830336663646666313035666630646661623835383633323161
+          3662663866613733340a623932646537623431303139363333336632366362313430666438663232
+          6339
+
 initial_sshkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKDnvLrwffOBQ6FYCu8NpJ/rDwIfsQSVVHvf3Dk5dqud dan@anssrv"
 
 openshift_tars:

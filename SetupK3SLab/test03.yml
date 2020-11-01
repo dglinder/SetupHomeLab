@@ -1,6 +1,10 @@
 #!/usr/bin/env ansible-playbook
-# ansible-galaxy collection install community.vmware
-# ansible-galaxy collection install ansible.posix
+# Usage:
+#   ./test03.yml --vault-password-file .vault_password
+#
+# Pre-requisites:
+#   ansible-galaxy collection install community.vmware
+#   ansible-galaxy collection install ansible.posix
 ---
 - hosts: localhost
   gather_facts: true
