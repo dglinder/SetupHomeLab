@@ -329,7 +329,7 @@
       enabled: true
     become: true
 
-  - name: "Permit OKD firewall ports"
+  - name: "Permit OKD firewall ports by port"
     firewalld:
       port: "{{ item }}"
       permanent: yes
@@ -340,7 +340,7 @@
       - "6443/tcp"
       - "22623/tcp"
 
-  - name: "Permit OKD firewall ports"
+  - name: "Permit OKD firewall ports by service"
     firewalld:
       service: "{{ item }}"
       permanent: yes
@@ -378,7 +378,7 @@
     register: reload_fw
     become: true
 
-  - name: "Test local DNS resolution"
+  - name: "Test local web server availability"
     changed_when: false
     command:
       warn: false  # Ansible complains when we use commands it has as modules
