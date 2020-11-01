@@ -378,29 +378,46 @@
     register: reload_fw
     become: true
 
-  - name: "Test local web server availability"
-    changed_when: false
-    command:
-      warn: false  # Ansible complains when we use commands it has as modules
-      cmd: "curl localhost:8080"
-
-  - name: "Setup OpenShift download directory"
+  - name: "Setup local OpenShift download directory"
     file:
       state: directory
-      path: "/tmp/openshift" #"{{ item.dest }}"
-    #loop: "openshift_tars"
+      path: "/tmp/openshift"
+    delegate_to: localhost
 
-  - name: "Download OpenShift Installer and Client"
-    unarchive:
-      src: "{{ item.src }}"
-      dest: "/tmp/openshift" #"{{ item.dest }}"
+  - name: "Setup remote OpenShift download directory"
+    file:
+      state: directory
+      path: "/tmp/openshift"
+
+  - name: "Download OpenShift Installer and Client locally"
+    get_url:
+      url: "{{ item.src }}"
+      dest: "/tmp/openshift/{{ item.file_name }}"
+      tmp_dest: "/tmp/"
       mode: '0440'
-    loop: "openshift_tars"
+      remote_src: true
+      timeout: 60
+    loop: "{{ openshift_tars }}"
+    register: download_tars_local
+    until: download_tars_local is not failed
+    retries: 5
+    delegate_to: localhost
+
+  - name: "Unarchive OpenShift Installer and Client"
+    unarchive:
+      src: "/tmp/openshift/{{ item.file_name }}"
+      dest: "/tmp/openshift/"
+      mode: '0440'
+    loop: "{{ openshift_tars }}"
+    register: create_tars
+    until: create_tars is not failed
+    retries: 5
 
   - name: "Copy binaries to /usr/local/bin"
     copy:
-      src: "{{ item }}"
+      src: "/tmp/openshift/{{ item }}"
       dest: "/usr/local/bin/"
+      mode: '0777'
       remote_src: yes
     loop:
       - kubectl
