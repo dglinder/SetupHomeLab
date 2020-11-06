@@ -2,7 +2,7 @@
 
 [{{item}}]
 {%   for entry in groups[item] %}
-{{ entry }}
+{{ entry }} ansible_user={{ hostvars[entry]['ansible_user'] }} ansible_host={{ hostvars[entry]['ansible_host'] }}
 {%   endfor %}
 {% endfor %}
 
