@@ -5,6 +5,13 @@
   loop_control:
     loop_var: myitem
 
+- name: "Show facts"
+  debug:
+    msg: "{{ ansible_facts}}" #['okd4-services'] }}"
+  loop: '{{ groups[item] }}'
+  loop_control:
+    loop_var: myitem
+
 # - name: "Populate the inventory file with services systems - {{ myitem }}"
 #   ini_file:
 #     path: "inventory.new"
