@@ -164,6 +164,39 @@
     loop_control:
       label: "{{ item.name }}"
 
+  - name: "Create new inventory file"
+    file:
+      state: touch
+      path: "inventory.new"
+
+  - name: "Populate the inventory file with new VMs"
+    ini_file:
+      path: "inventory.new"
+      section: "new_vms"
+      option: "{{ item.name }} ansible_host"
+      value: "{{ item.nics[0].ip }}"
+      no_extra_spaces: yes
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Populate the inventory file with services systems"
+    ini_file:
+      path: "inventory.new"
+      section: "services"
+      option: "{{ item.name }} ansible_host"
+      value: "{{ item.nics[0].ip }}"
+      no_extra_spaces: yes
+    loop: '{{ vminfo }}'
+    when:
+      - "{{ 'services' in item.in_group }}"
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: Pause for a bit
+    pause:
+      seconds: 120
+
 - hosts: newvms
   gather_facts: true
   remote_user: vagrant
