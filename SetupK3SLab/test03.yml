@@ -205,6 +205,11 @@
   - name: "Ping new hosts"
     ping:
 
+  - name: "Create the local flag file"
+    file:
+      state: touch
+      path: "/root/build-phase-02-ready"
+
 - hosts: services
   gather_facts: true
   remote_user: vagrant
