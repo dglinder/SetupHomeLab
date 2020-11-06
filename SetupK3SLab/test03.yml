@@ -180,6 +180,7 @@
     loop_control:
       label: "{{ item.name }}"
 
+# Loop over all groups to add to inventory
   - name: "Populate the inventory file with services systems"
     ini_file:
       path: "inventory.new"
@@ -193,6 +194,30 @@
     loop_control:
       label: "{{ item.name }}"
 
+# Loop over all groups to add to inventory
+  - name: "Populate the inventory file with groups"
+    include_tasks: populate_inventory_group.yml
+    loop: #'{{ vminfo }}'
+      - services
+      - pfsense
+      - bootstrap
+      - control-plane
+      - compute
+
+  # - name: "Populate the inventory file with services systems"
+  #   ini_file:
+  #     path: "inventory.new"
+  #     section: "services"
+  #     option: "{{ item.name }} ansible_host"
+  #     value: "{{ item.nics[0].ip }}"
+  #     no_extra_spaces: yes
+  #   loop: '{{ vminfo }}'
+  #   when:
+  #     - "{{ 'services' in item.in_group }}"
+  #   loop_control:
+  #     label: "{{ item.name }}"
+
+# DEBUG: Review new inventory file
   - name: Pause for a bit
     pause:
       seconds: 120

@@ -1,0 +1,20 @@
+- name: "Hosts in {{ item }} group"
+  debug:
+    var: "myitem"
+  loop: '{{ groups[item] }}'
+  loop_control:
+    loop_var: myitem
+
+# - name: "Populate the inventory file with services systems - {{ myitem }}"
+#   ini_file:
+#     path: "inventory.new"
+#     section: "{{ item }}"
+#     option: "{{ myitem.name }} ansible_host"
+#     value: "{{ myitem.nics[0].ip }}"
+#     no_extra_spaces: yes
+#   loop: '{{ groups[item] }}'
+#   when:
+#     - "{{ services in myitem.in_group }}"
+#   loop_control:
+#     loop_var: myitem
+#   #   label: "{{ loop_var.name }}"
