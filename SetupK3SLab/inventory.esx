@@ -10,5 +10,24 @@ vcenter_username="root"
 vcenter_password="1234NewS!@#$"
 esxi_hostname="esx.lab.linder.org"
 
-[new_vms]
+[services]
 # This will be populated in RAM by the playbook.
+
+[pfsense]
+# This will be populated in RAM by the playbook.
+
+[bootstrap]
+# This will be populated in RAM by the playbook.
+
+[control-plane]
+# This will be populated in RAM by the playbook.
+
+[compute]
+# This will be populated in RAM by the playbook.
+
+[new_vms:children]
+services
+pfsense
+bootstrap
+control-plane
+compute
