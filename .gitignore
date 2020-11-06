@@ -5,3 +5,4 @@ terraform.tfstate*
 .terraform/
 */*.ova
 .vault_password
+SetupK3SLab/inventory.new
