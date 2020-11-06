@@ -475,3 +475,92 @@
     loop:
       - "oc version"
       - "openshift-install version"
+
+# Setup the openshift-installer
+  - name: "Setup OpenShift installer directory"
+    file:
+      state: directory
+      path: "/root/install_dir/"
+    # delegate_to: localhost
+
+  - name: "Setup the OpenShift installer files"
+    template:
+      src: "./templates/okd4_files/install-config.yaml.j2"
+      dest: "/root/install_dir/install-config.yaml"
+      owner: root
+      group: root
+      mode: '0644'
+    become: true
+
+  - name: "Generate the Kubernetes manifests for the cluster"
+    changed_when: false
+    command:
+      cmd: "openshift-install create manifests --dir=/root/install_dir/"
+
+  - name: "Fix scheduler to not use control plane machines"
+    # sed -i 's/mastersSchedulable: true/mastersSchedulable: False/' \
+    #         install_dir/manifests/cluster-scheduler-02-config.yml
+    replace:
+      path: "/root/install_dir/manifests/cluster-scheduler-02-config.yml"
+      regexp: 'mastersSchedulable: true'
+      replace: 'mastersSchedulable: false'
+
+  - name: "Generate the Kubernetes ignition-configs"
+    changed_when: false
+    command:
+      cmd: "openshift-install create ignition-configs --dir=/root/install_dir/"
+
+  # TODO: Note: If you reuse the install_dir, make sure it is empty.
+  #       Hidden files are created after generating the configs, and
+  #       they should be removed before you use the same folder on a
+  #       2nd attempt.
+
+# Host ignition and Fedora CoreOS files on the webserver
+  - name: "Make okd4 directory in HTML root"
+    file:
+      state: directory
+      path: "{{ item }}"
+      owner: apache
+      group: apache
+      mode: '0755'
+    loop:
+      - "/var/www/html/okd4/"
+      - "/var/www/html/okd4/auth/"
+
+  - name: "List all files in install_dir/ directory"
+    find:
+      paths: "/root/install_dir/"
+      recurse: yes
+      file_type: any
+    register: files_to_copy
+
+  - name: "Show files to copy"
+    debug:
+      var: files_to_copy
+
+  # - name: "Create all directories in install_dir/"
+  #   file:
+  #     state: directory
+  #     path: "{{ }}"
+  #     owner: apache
+  #     group: apache
+  #     mode: '0755'
+  #   loop: "{{ files_to_copy.files }}"
+  #   when:
+  #     - item.isdir
+
+  - name: "Copy all install_dir/* files to okd4 directory"
+    copy:
+      src: "{{ item.path }}"
+      remote_src: true
+      #    path: "{{ item.path | regex_replace('/usr/share/easy-rsa','/etc/easy-rsa') }}"
+      dest: "{{ item.path | regex_replace('/root/install_dir/','/var/www/html/okd4/')}}"
+      #dest: "/var/www/html/okd4/"
+      owner: apache
+      group: apache
+      mode: '0755'
+    loop: "{{ files_to_copy.files }}"
+    loop_control:
+      label: "{{ item.path }}"
+    when:
+      - not item.isdir
