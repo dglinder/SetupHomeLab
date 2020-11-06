@@ -11,6 +11,7 @@ vcenter_password: !vault |
           3662663866613733340a623932646537623431303139363333336632366362313430666438663232
           6339
 
+pull_secret: '{"auths":{"fake":{"auth": "bar"}}}'
 initial_sshkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKDnvLrwffOBQ6FYCu8NpJ/rDwIfsQSVVHvf3Dk5dqud dan@anssrv"
 
 openshift_tars:
