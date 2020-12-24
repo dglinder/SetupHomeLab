@@ -1,0 +1,14 @@
+[builder]
+localhost
+
+[esx]
+esx.lab.linder.org
+
+[esx:vars]
+vcenter_hostname="esx.lab.linder.org"
+vcenter_username="root"
+vcenter_password="1234NewS!@#$"
+esxi_hostname="esx.lab.linder.org"
+
+[new_vms]
+# This will be populated in RAM by the playbook.

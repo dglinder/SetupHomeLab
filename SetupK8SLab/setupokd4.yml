@@ -1,0 +1,583 @@
+#!/usr/bin/ansible-playbook
+---
+- hosts: all
+  gather_facts: true
+
+  tasks:
+  - name: Setup passwordless sudo
+    become: true
+    lineinfile:
+      path: /etc/sudoers
+      state: present
+      line: "{{ ansible_user_id }} ALL=(ALL) NOPASSWD:ALL"
+      validate: /usr/sbin/visudo -cf %s
+
+  - name: Setup hostname
+    include_role:
+      name: fqdn
+      apply:
+        become: true
+    vars:
+      fqdn: "{{ inventory_hostname }}"
+      hostname: "{{ inventory_hostname_short }}"
+#
+- hosts: services
+  gather_facts: true
+
+  tasks:
+  - name: Setup automatic updates
+    become: true
+    package:
+      state: installed
+      name:
+      - dnf-automatic
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution_major_version|int >= 8
+
+  - name: "Install EPEL"
+    become: true
+    package:
+      state: installed
+      name:
+      - "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+    register: install_epel
+    when:
+      - ansible_distribution in [ 'RedHat', 'CentOS' ]
+      - ansible_os_family == 'RedHat'
+
+  - name: "Ensure RedHat 8 has the repositores setup"
+    become: true
+    rhsm_repository:
+      name:
+        - "ansible-2-for-rhel-{{ ansible_distribution_major_version }}-x86_64-rpms" # Red Hat Ansible Engine 2 for RHEL 8 x86_64
+      state: enabled
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution == 'RedHat'
+      - ansible_distribution_major_version|int == 8
+    register: install_repos
+
+  - name: "Ensure RedHat 7 has the repositores setup"
+    become: true
+    rhsm_repository:
+      name:
+        - "rhel-{{ ansible_distribution_major_version }}-server-extras-rpms"
+        - "rhel-server-rhscl-{{ ansible_distribution_major_version }}-rpms"
+        - "rhel-{{ ansible_distribution_major_version }}-server-ansible-2.9-rpms"
+      state: enabled
+    when:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution == 'RedHat'
+      - ansible_distribution_major_version|int == 7
+    register: install_repos
+
+  - name: Update all packages
+    become: true
+    package:
+      state: latest
+      name: "*"
+    notify: do_reboot
+
+  - name: Install Chrome browser
+    become: true
+    package:
+      name: chromium
+
+  - name: Install XRDP
+    become: true
+    package:
+      name:
+        - xrdp
+        - tigervnc-server
+
+  - name: Enable XRDP
+    service:
+      name: xrdp
+      state: started
+      enabled: true
+    notify: restart_firewalld
+
+  - name: Open up XRDP FW port
+    firewalld:
+      port: 3389/tcp
+      permanent: true
+      state: enabled
+    notify: restart_firewalld
+
+  # Setup local DNS server
+  - name: Install BIND apps
+    become: true
+    package:
+      name:
+        - bind
+        - bind-utils
+
+  - name: Create the BIND zones directory
+    file:
+      path: /etc/named/zones
+      state: directory
+      seuser: system_u
+      serole: object_r
+      setype: named_conf_t
+      owner: root
+      group: named
+      mode: 0640
+
+  - name: Build named.conf file
+    template:
+      src: templates/named.conf.j2
+      dest: /etc/named.conf
+      setype: named_conf_t
+      seuser: system_u
+      serole: object_r
+      mode: 0640
+      group: named
+
+  - name: Build named.conf.local file
+    template:
+      src: templates/named.conf.local.j2
+      dest: /etc/named/named.conf.local
+      setype: named_conf_t
+      seuser: system_u
+      serole: object_r
+      mode: 0640
+      group: named
+
+  - name: Build db.okd.local file
+    template:
+      src: templates/db.okd.local.j2
+      dest: /etc/named/zones/db.okd.local
+      seuser: system_u
+      serole: object_r
+      setype: named_conf_t
+      owner: root
+      group: named
+      mode: 0640
+
+  - name: Build db.{{ named_zone_db }} file
+    template:
+      src: templates/db.subnet.j2
+      dest: "/etc/named/zones/db.{{ named_zone_db }}"
+      setype: named_conf_t
+      seuser: system_u
+      serole: object_r
+      mode: 0640
+      group: named
+
+  - name: Enable named
+    service:
+      name: named
+      state: started
+      enabled: true
+
+  - name: Open up named FW port
+    firewalld:
+      port: 53/udp
+      permanent: true
+      state: enabled
+    notify: restart_firewalld
+
+  - name: Get dig okd.local output
+    command: dig okd.local
+    changed_when: false
+    register: dig1_output
+
+  - name: Show dig okd.local output
+    debug:
+      msg: "OC version: {{ dig1_output.stdout }}"
+
+  - name: 'Get dig –x {{ hostvars["okd4-services"].ansible_host }} output'
+    command: 'dig –x {{ hostvars["okd4-services"].ansible_host }}'
+    changed_when: false
+    register: dig2_output
+
+  - name: 'Show dig –x {{ hostvars["okd4-services"].ansible_host }} output'
+    debug:
+      msg: "OC version: {{ dig2_output.stdout }}"
+#
+# Setup local HAProxy
+  - name: Install HAproxy
+    become: true
+    package:
+      name:
+        - haproxy
+
+  - name: Build haproxy.cfg
+    template:
+      src: templates/haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+      setype: etc_t
+      seuser: system_u
+      serole: object_r
+      mode: 0644
+      group: root
+      owner: root
+
+  - name: Set SELinux haproxy boolean values
+    seboolean:
+      name: haproxy_connect_any
+      state: yes
+      persistent: yes
+
+  - name: Enable haproxy
+    service:
+      name: haproxy
+      state: started
+      enabled: true
+
+  - name: Open up OKD4 FW ports
+    firewalld:
+      port: "{{ item }}"
+      permanent: true
+      state: enabled
+    with_items:
+      - 6443/tcp
+      - 22623/tcp
+    notify: restart_firewalld
+
+  - name: Open up OKD4 FW services
+    firewalld:
+      service: "{{ item }}"
+      permanent: true
+      state: enabled
+    with_items:
+      - http
+      - https
+    notify: restart_firewalld
+
+  - name: Install Apache
+    become: true
+    package:
+      name:
+        - httpd
+
+  - name: Setup Apache to listen on 8080
+    become: true
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^Listen 80'
+      line: 'Listen 8080'
+
+  - name: Set SELinux Apache boolean values
+    seboolean:
+      name: httpd_read_user_content 
+      state: yes
+      persistent: yes
+      
+  - name: Enable httpd
+    service:
+      name: httpd
+      state: started
+      enabled: true
+          
+  - name: Get curl output
+    command: curl localhost:8080
+    changed_when: false
+    register: curl_output
+
+  - name: Show curl output
+    debug:
+      msg: "OC version: {{ curl_output.stdout }}"
+        
+  - name: Open up OKD4 FW ports
+    firewalld:
+      port: "{{ item }}"
+      permanent: true
+      state: enabled
+    with_items:
+      - 8080/tcp
+    notify: restart_firewalld
+
+  - name: Update NetworkManager.conf
+    ini_file:
+      dest: /etc/NetworkManager/NetworkManager.conf
+      section: main
+      option: dns
+      value: none
+      backup: yes
+      owner: root
+      group: root
+      mode: 0644
+    register: netmgr
+    when: ansible_distribution_major_version|int >= 7
+
+  - name: Ensure dns servers are configured in /etc/resolv.conf
+    template:
+      src: templates/resolv.conf.j2
+      dest: /etc/resolv.conf
+      backup: yes
+      owner: root
+      group: root
+      mode: 0644
+      
+  - name: Restart NetworkManger
+    service:
+      name: NetworkManager
+      state: restarted
+      enabled: yes
+    when: netmgr is changed
+#
+# Install the openshift installer
+  - name: Throw-away OpenShift download
+    # Occasionally the download fails with a look-up error for the first URL
+    # but the second succeds.  Try this download once and ignore failures, then
+    # re-do the downloads again in the next play.
+    # TODO: Look at better handling of this.
+    get_url:
+      url: "{{ item.src_url }}"
+      dest: "/tmp/{{ item.dest_name }}"
+      checksum: "{{ item.hash }}"
+    retries: 5
+    delay: 10
+    ignore_errors: yes
+    with_items: "{{ okd_files }}"
+
+  - name: Download OpenShift installers
+    # Latest available from: https://github.com/openshift/okd/releases/
+    get_url:
+      url: "{{ item.src_url }}"
+      dest: "/tmp/{{ item.dest_name }}"
+      checksum: "{{ item.hash }}"
+    retries: 5
+    delay: 10
+    with_items: "{{ okd_files }}"
+
+  - name: Create OpenShift extraction directories
+    file:
+      path: "/tmp/{{ item.dest_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0640
+    with_items: "{{ okd_files }}"
+
+  - name: Extract OpenShift files
+    unarchive:
+      src: "/tmp/{{ item.dest_name }}"
+      dest: "/tmp/{{ item.dest_dir }}"
+      creates: "/tmp/{{ item.dest_dir }}/{{ item.key_file }}"
+      remote_src: yes
+    with_items: "{{ okd_files }}"
+
+  - name: Copy binaries to common path
+    copy:
+      remote_src: yes
+      src: "{{ item }}"
+      dest: "/usr/local/bin/"
+      owner: root
+      group: root
+      mode: '0555'
+    with_items: "{{ okd_bins }}"
+
+  - name: Get OC version
+    command: oc version
+    changed_when: false
+    register: oc_version
+
+  - name: Show OC version
+    debug:
+      msg: "OC version: {{ oc_version.stdout }}"
+
+  - name: Get installer version
+    command: openshift-install version
+    changed_when: false
+    register: installer_version
+    
+  - name: Show installer version
+    debug:
+      msg: "OC version: {{ installer_version.stdout }}"
+#
+# Setup the openshift-installer
+  - name: Clean out any old install directory
+    file:
+      state: absent
+      path: /root/install_dir
+
+  - name: Build the install directory
+    file:
+      state: directory
+      path: /root/install_dir
+
+  - name: Build the install config file
+    template:
+      src: templates/install-config.yaml.j2
+      dest: /root/install_dir/install-config.yaml
+      mode: 0640
+      group: named
+      owner: root
+
+  - name: Generate the Kubernetes manifests for the cluster
+    command:
+      cmd: openshift-install create manifests --dir=install_dir/
+      chdir: /root/
+     
+  - name: Prevent Pods from spawning on control plane machines
+    lineinfile:
+      path: /root/install_dir/manifests/cluster-scheduler-02-config.yml
+      regexp: 'mastersSchedulable: true'
+      line: 'mastersSchedulable: False'
+
+  - name: Create ignition-configs
+    command:
+      cmd: openshift-install create ignition-configs --dir=install_dir/
+      chdir: /root/
+#
+# Host ignition and Fedora CoreOS files on the webserver
+  - name: Make okd4 web directory
+    file:
+      state: directory
+      path: /var/www/html/okd4
+
+  - name: Find all Kubernetes install files
+    # https://stackoverflow.com/questions/33543551/is-there-with-fileglob-that-works-remotely-in-ansible
+    find:
+      paths: /root/install_dir/
+      file_type: any
+    register: install_dir_files
+
+  - name: Clean up path
+    set_fact:
+      install_files: "{{ install_dir_files | json_query('files[*].path') }}"
+
+  - name: Copy install files to web directory
+    copy:
+      src: "{{ item }}"
+      remote_src: yes
+      dest: /var/www/html/okd4/
+      owner: apache
+    with_items: "{{ install_files }}"
+
+  - name: Get the webserver metadata.json file
+    command: curl localhost:8080/okd4/metadata.json
+    changed_when: false
+    register: metadata_output
+
+  - name: Show the webserver metadata.json file
+    debug:
+      msg: "OC version: {{ metadata_output.stdout }}"
+
+# Download the Fedora CoreOS bare-metal bios image and sig files
+  - name: Throw-away FCOS download
+    # Occasionally the download fails with a look-up error for the first URL
+    # but the second succeds.  Try this download once and ignore failures, then
+    # re-do the downloads again in the next play.
+    # TODO: Look at better handling of this.
+    get_url:
+      url: "{{ item.src_url }}"
+      dest: "{{ item.dest_path }}"
+      checksum: "{{ item.hash }}"
+    retries: 5
+    delay: 10
+    ignore_errors: yes
+    with_items: "{{ fcos_files }}"
+
+  - name: Download Fedora CoreOS files
+    # Latest available from: https://coreos.fedoraproject.org
+    get_url:
+      url: "{{ item.src_url }}"
+      dest: "{{ item.dest_path }}"
+      checksum: "{{ item.hash }}"
+    retries: 5
+    delay: 10
+    with_items: "{{ fcos_files }}"
+
+  - name: Fix file ownership
+    file:
+      owner: apache
+      mode: '0755'
+      path: "{{ item.dest_path }}"
+    with_items: "{{ fcos_files }}"
+
+# Starting the bootstrap node
+  - name: Show bootstrap node boot info
+    pause:
+      seconds: 1
+      prompt: |
+        coreos.inst.install_dev=/dev/sda 
+        coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
+        coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/bootstrap.ign
+
+# Starting the control plane nodes
+  - name: Show control plane nodes boot info
+    pause:
+      seconds: 1
+      prompt: |
+        coreos.inst.install_dev=/dev/sda 
+        coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
+        coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/master.ign 
+
+# Starting the compute nodes
+  - name: Show compute nodes boot info
+    pause:
+      seconds: 1
+      prompt: |
+        coreos.inst.install_dev=/dev/sda 
+        coreos.inst.image_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/fcos.raw.xz 
+        coreos.inst.ignition_url=http://{{ hostvars["okd4-services"].ansible_host }}:8080/okd4/worker.ign
+
+# Monitor the bootstrap installation
+
+  handlers:
+  - name: restart_firewalld
+    become: true
+    systemd:
+      name: firewalld
+      state: reloaded
+
+  - name: do_reboot
+    become: true
+    reboot:
+#
+- hosts: pfsense
+  gather_facts: true
+
+  # Include this module?
+  # https://github.com/opoplawski/ansible-pfsense/
+
+  tasks:
+  - name: Do stuff
+    debug:
+      msg: "Do stuff here"
+
+#
+- hosts: bootstrap
+  gather_facts: true
+
+  tasks:
+  - name: Do stuff
+    debug:
+      msg: "Do stuff here"
+
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+
+#
+- hosts: control_plane
+  gather_facts: true
+  
+  tasks:
+  - name: Do stuff
+    debug:
+      msg: "Do stuff here"
+
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+#
+- hosts: compute
+  gather_facts: true
+  
+  tasks:
+  - name: Do stuff
+    debug:
+      msg: "Do stuff here"
+
+  handlers:
+  - name: do_reboot
+    become: true
+    reboot:
+#

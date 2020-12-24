@@ -1,0 +1,334 @@
+---
+# Execute:
+#   ansible-playbook -i inventory.esx ./build_vms.yml -K
+#
+- name: Prep Ansible executor
+  hosts: localhost
+  gather_facts: true
+  connection: local
+  become: true
+
+  tasks:
+  # - name: Get local systems IP address
+  #   set_fact:
+  #     httpd_ip: "{{ ansible_facts.default_ipv4.address }}"
+  #     httpd_port: 80
+
+  - name: Add dummy host for persistent information
+    add_host:
+      name: "global_info"
+      ansible_master_ip: "{{ ansible_facts.default_ipv4.address }}"
+      ansible_master_port: 80 
+
+  - name: Install local HTTPD server
+    package:
+      name: httpd
+
+  - name: Start service httpd, if not started
+    service:
+      name: httpd
+      state: started
+
+  - name: Permit httpd traffic
+    firewalld:
+      service: http
+      permanent: yes
+      state: enabled
+    register: reload_fw
+
+  - name: reload service firewalld
+    systemd:
+      name: firewalld
+      state: reloaded
+    when: reload_fw is changed
+
+  - name: Add Ansible-VMWare system pre-requisites
+    package:
+      name:
+        - python2-pip
+        - python2-pyvmomi
+      state: installed
+
+  - name: Add Ansible-VMware pre-requisites
+    pip:
+      name: pyvmomi
+      state: present
+  # executable: pip3
+
+- name: Build Services VMs
+  hosts: esx
+  gather_facts: false
+
+  tasks:
+  - name: Bring in HTTPD server info from earlier task
+    set_fact:
+      httpd_ip: "{{ hostvars['global_info']['ansible_master_ip'] }}"
+      httpd_port: "{{ hostvars['global_info']['ansible_master_port'] }}"
+
+  # - name: "Debugging output"
+  #   debug:
+  #     var: services_vms
+  # - name: "Show nics"
+  #   debug:
+  #     msg: "{{ services_vms[0].networks[0].bitmask }}"
+
+  - name: Setup the files for bootstraping systems
+    template:
+      src: ./templates/services_kickstart.j2
+      dest: /var/www/html/services.ks
+      owner: apache
+      group: apache
+      mode: '0644'
+    delegate_to: localhost
+    become: true
+
+  - name: Clean up Services VM server
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ item.hostname }}"
+      state: absent
+      force: true
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ services_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - name: Create the Services VM servers
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      folder: /
+      name: "{{ item.hostname }}"
+      state: present
+      guest_id: rhel8_64Guest
+      # This is hostname of particular ESXi server on which user wants VM to be deployed
+      esxi_hostname: "{{ esxi_hostname }}"
+      cdrom:
+        type: iso
+        state: present
+        iso_path: "{{ services_info.isoname }}"
+      disk:
+      - size_gb: "{{ item.disk_size }}"
+        type: thin
+        datastore: "{{ datastore }}"
+      hardware:
+        memory_mb: "{{item.ram_mb}}"
+        num_cpus: "{{item.cpus}}"
+        scsi: paravirtual
+        boot_firmware: "bios"
+      networks:
+      - name: "{{ item.networks.0.net_loc }}"
+        mac: "{{item.networks.0.macaddr}}"
+        ip: "{{item.networks.0.ipaddress}}"
+        netmask: "{{item.networks.0.netmask}}"
+        device_type: vmxnet3
+      wait_for_ip_address: no
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ services_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - name: Power on Services VM servers
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ item.hostname }}"
+      state: poweredon
+      wait_for_ip_address: no
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ services_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - pause:
+      seconds: 2
+
+  - name: Send boot configuration
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.hostname }}"
+      keys_send:
+        - ESC
+        - ESC
+      string_send: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL={{ services_info.iso_label }} inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ services_info.kickstart_file }}"
+    delegate_to: localhost
+    loop: '{{ services_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  # - pause:
+  #     seconds: 2
+  #     prompt: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL={{ services_info.iso_label }} inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ services_info.kickstart_file }}"
+  #     echo: no
+
+  - name: Start boot command
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.hostname }}"
+      keys_send:
+        - ENTER
+    delegate_to: localhost
+    loop: '{{ services_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+- name: Build Bootstrap VMs
+  hosts: esx
+  gather_facts: false
+
+  tasks:
+  - name: Bring in HTTPD server info from earlier task
+    set_fact:
+      httpd_ip: "{{ hostvars['global_info']['ansible_master_ip'] }}"
+      httpd_port: "{{ hostvars['global_info']['ansible_master_port'] }}"
+
+  - name: Clean up bootstrap VM server
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ item.hostname }}"
+      state: absent
+      force: true
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - name: Create the bootstrap VM server
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      folder: /
+      name: "{{ item.hostname }}"
+      state: present
+      guest_id: rhel8_64Guest
+      # This is hostname of particular ESXi server on which user wants VM to be deployed
+      esxi_hostname: "{{ esxi_hostname }}"
+      cdrom:
+        type: iso
+        state: present
+        iso_path: "{{ bootstrap_info.isoname }}"
+      disk:
+      - size_gb: "{{ item.disk_size }}"
+        type: thin
+        datastore: "{{ datastore }}"
+      hardware:
+        memory_mb: "{{item.ram_mb}}"
+        num_cpus: "{{item.cpus}}"
+        scsi: paravirtual
+        boot_firmware: "bios"
+      networks:
+      - name: "{{ item.networks.0.net_loc }}"
+        mac: "{{item.networks.0.macaddr}}"
+        ip: "{{item.networks.0.ipaddress}}"
+        netmask: "{{item.networks.0.netmask}}"
+        device_type: vmxnet3
+      wait_for_ip_address: no
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - name: Power on bootstrap VM server
+    vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ item.hostname }}"
+      state: poweredon
+      wait_for_ip_address: no
+    delegate_to: localhost
+    register: deploy_vm
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - pause:
+      seconds: 2
+
+  - name: Send boot configuration
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.hostname }}"
+      keys_send:
+        - ESC
+        - ESC
+      string_send: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL={{ bootstrap_info.iso_label }} inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ bootstrap_info.kickstart_file }}"
+    delegate_to: localhost
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+  - pause:
+      seconds: 2
+      prompt: "vmlinuz initrd=initrd.img inst.stage2=hd:LABEL={{ bootstrap_info.iso_label }} inst.ks=http://{{ httpd_ip }}:{{ httpd_port }}/{{ bootstrap_info.kickstart_file }}"
+      echo: no
+
+  - name: Start boot command
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.hostname }}"
+      keys_send:
+        - ENTER
+    delegate_to: localhost
+    loop: '{{ bootstrap_vms }}'
+    loop_control:
+      label: "{{ item.hostname }}"
+
+#  - name: "Show systems built"
+#    debug:
+#      var: deploy_vm
+
+  # - name: Create a virtual machine on given ESXi hostname
+  #   vmware_guest:
+  #     hostname: "{{ vcenter_hostname }}"
+  #     username: "{{ vcenter_username }}"
+  #     password: "{{ vcenter_password }}"
+  #     validate_certs: no
+  #     folder: /
+  #     name: TesttTemplate1 #test_vm_0001
+  #     state: poweredoff
+  #     guest_id: rhel8_64Guest
+  #     # This is hostname of particular ESXi server on which user wants VM to be deployed
+  #     esxi_hostname: "{{ esxi_hostname }}"
+  #     is_template: true
+  #     wait_for_ip_address: no
+  #   delegate_to: localhost
+  #   register: deploy_vm
+
+  # - vmware_guest:
+  #     vcenter_hostname: "{{ esxi_ip_or_dns }}" # ip address of hypervisor
+  #     esxi:
+  #       datacenter: ha-datacenter
+  #       hostname: "{{ esxi_hostname }}" # name shown in hypervisor console
+  #     username: "{{ esxi_username }}"
+  #     password: "{{ esxi_password }}"

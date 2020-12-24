@@ -1,0 +1,410 @@
+#!/usr/bin/env ansible-playbook
+# ansible-galaxy collection install community.vmware
+# ansible-galaxy collection install ansible.posix
+---
+- hosts: localhost
+  gather_facts: true
+  tasks:
+  - name: Install local HTTPD server
+    package:
+      name: httpd
+
+  - name: Start service httpd, if not started
+    service:
+      name: httpd
+      state: started
+    become: true
+
+  - name: Permit httpd traffic
+    firewalld:
+      service: http
+      permanent: yes
+      state: enabled
+    register: reload_fw
+    become: true
+
+  - name: reload service firewalld
+    systemd:
+      name: firewalld
+      state: reloaded
+    when: reload_fw is changed
+    become: true
+
+  - name: Add Ansible-VMWare system pre-requisites
+    package:
+      name:
+        - python2-pip
+        - python2-pyvmomi
+      state: installed
+    become: true
+
+  - name: Add Ansible-VMware pre-requisites
+    pip:
+      name: pyvmomi
+      state: present
+  # executable: pip3
+
+  - name: "Bring in HTTPD server info"
+    set_fact:
+      httpd_ip: "{{ ansible_facts.default_ipv4.address }}"
+      httpd_port: 80
+
+  - name: "Build VM objects"
+    community.vmware.vmware_guest:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      folder: /
+      name: "{{ item.name }}"
+      state: poweredon
+      guest_id: "{{ item.guest_id }}"
+      esxi_hostname: "{{ esxi_hostname }}"
+      cdrom:
+      - type: iso
+        state: present
+        iso_path: "{{ item.iso }}"
+        controller_number: 0
+        unit_number: 0
+      disk:
+      - size_gb: "{{ item.HDD.size }}"
+        type: thin
+        datastore: "{{ item.HDD.datastore }}"
+      hardware:
+        memory_mb: "{{ item.RAM }}"
+        num_cpus: "{{ item.CPUs }}"
+        scsi: paravirtual
+        boot_firmware: "bios"
+      networks: "{{ item.nics }}"
+      wait_for_ip_address: no
+    register: deploy_vm
+    loop: "{{ vminfo }}"
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Setup kickstart files"
+    template:
+      src: "./templates/{{ item.kickstart_template }}"
+      dest: "/var/www/html/{{ item.kickstart_file }}"
+      owner: apache
+      group: apache
+      mode: '0644'
+    become: true
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Wait for ISO to boot"
+    pause:
+      seconds: 10
+
+  - name: "Send boot configuration"
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.name }}"
+      keys_send:
+        - ESC
+        - ESC
+      string_send: "{{ item.boot_string | replace('_HTTPD_IP_',httpd_ip) | replace('_HTTPD_PORT_',httpd_port) | replace('_KS_FILE_',item.kickstart_file) }}"
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Wait for kickstart"
+    pause:
+      seconds: 10
+
+  - name: "Start boot from ISO"
+    community.vmware.vmware_guest_sendkey:
+      validate_certs: no
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      name: "{{ item.name }}"
+      keys_send:
+        - ENTER
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Clean up local known hosts"
+    known_hosts:
+      path: /home/dan/.ssh/known_hosts
+      state: absent
+      name: "{{ item.nics[0].ip }}"
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Wait for SSH to come up"
+    wait_for:
+      port: 22
+      host: '{{ item.nics[0].ip }}'
+      timeout: 900
+    connection: local
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+  - name: "Add new hosts"
+    add_host:
+      name: "{{ item.name }}"
+      ansible_host: "{{ item.nics[0].ip }}"
+      ansible_user: root
+      ansible_password: "{{ root_passwd }}"
+      groups: "{{ item.in_group }}"
+    loop: '{{ vminfo }}'
+    loop_control:
+      label: "{{ item.name }}"
+
+- hosts: newvms
+  gather_facts: true
+  remote_user: vagrant
+
+  tasks:
+  - name: "Ping new hosts"
+    ping:
+
+- hosts: services
+  gather_facts: true
+  remote_user: vagrant
+
+  tasks:
+  - name: "Install epel for packages"
+    package:
+      name: epel-release
+      state: present
+
+  # - name: "Restart systemctl"
+  #   systemd:
+  #     state: reloaded
+
+  - name: "Install apps for services system"
+    package:
+      name:
+        - xrdp
+        - tigervnc-server
+        # - chromium
+        - bind
+        - haproxy
+        - httpd
+      state: present
+    become: true
+
+  - name: "Enable XRDP"
+    systemd:
+      name: xrdp
+      state: started
+      enabled: true
+    become: true
+
+  - name: Permit xrdp traffic
+    firewalld:
+      port: "3389/tcp"
+      permanent: yes
+      state: enabled
+    register: reload_fw
+    become: true
+
+  - name: "Setup BIND zones directory"
+    file:
+      state: directory
+      path: "/etc/named/zones"
+
+  - name: "Setup BIND /etc/named files"
+    template:
+      src: "./templates/okd4_files/{{ item.src }}"
+      dest: "{{ item.dest }}"
+      owner: root
+      group: named
+      mode: '0644'
+    become: true
+    loop:
+      - src: db.192.168.1.j2
+        dest: "/etc/named/zones/db.192.168.1"
+      - src: db.okd.local.j2
+        dest: "/etc/named/zones/db.okd.local"
+      - src: named.conf.j2
+        dest: "/etc/named.conf"
+      - src: named.conf.local.j2
+        dest: "/etc/named/named.conf.local"
+      # - src: haproxy.cfg.j2
+      #   dest: ""
+      # - src: htpasswd_provider.yaml.j2
+      #   dest: ""
+      # - src: install-config.yaml.j2
+      #   dest: ""
+      # - src: registry_pv.yaml.j2
+      #   dest: ""
+
+  - name: "Start and enable BIND"
+    systemd:
+      name: named
+      state: restarted
+      enabled: true
+    become: true
+
+  - name: "Permit BIND traffic"
+    firewalld:
+      port: "53/udp"
+      permanent: yes
+      state: enabled
+    register: reload_fw
+    become: true
+
+  # DNS1="127.0.0.1"
+  # DNS2="192.168.65.7"
+  - name: "Setup primary DNS"
+    lineinfile:
+      path: "/etc/sysconfig/network-scripts/ifcfg-ens192"  # The primary NIC
+      regexp: "^DNS1"
+      line: "DNS1='127.0.0.1'"
+
+  - name: "Setup secondary DNS"
+    lineinfile:
+      path: "/etc/sysconfig/network-scripts/ifcfg-ens192"  # The primary NIC
+      insertafter: EOF
+      line: "DNS2='192.168.65.7'"
+
+  - name: "Restart NetworkManager"
+    systemd:
+      name: NetworkManager
+      state: restarted
+    become: true
+
+  - name: "Test local DNS resolution"
+    changed_when: false
+    command:
+      cmd: "{{ item }}"
+    register: dns_test
+    loop:
+      - "dig okd.local"
+      - "dig -x 192.168.1.210"
+
+  - name: "Show DNS test results"
+    debug:
+      var: dns_test
+
+  - name: "Setup HAProxy files"
+    template:
+      src: "./templates/okd4_files/{{ item.src }}"
+      dest: "{{ item.dest }}"
+      owner: root
+      group: root
+      mode: '0644'
+    become: true
+    loop:
+      - src: haproxy.cfg.j2
+        dest: "/etc/haproxy/haproxy.cfg"
+      # - src: htpasswd_provider.yaml.j2
+      #   dest: ""
+      # - src: install-config.yaml.j2
+      #   dest: ""
+      # - src: registry_pv.yaml.j2
+      #   dest: ""
+
+  # sudo setsebool -P haproxy_connect_any 1
+  # sudo systemctl enable haproxy
+  # sudo systemctl start haproxy
+  # sudo systemctl status haproxy'
+
+  - name: "Set HAProxy SELinux settings"
+    ansible.posix.seboolean:
+      name: "haproxy_connect_any"
+      state: yes
+      persistent: yes
+
+  - name: "Start and enable HAProxy"
+    systemd:
+      name: haproxy
+      state: restarted
+      enabled: true
+    become: true
+
+  - name: "Permit OKD firewall ports"
+    firewalld:
+      port: "{{ item }}"
+      permanent: yes
+      state: enabled
+    register: reload_fw
+    become: true
+    loop:
+      - "6443/tcp"
+      - "22623/tcp"
+
+  - name: "Permit OKD firewall ports"
+    firewalld:
+      service: "{{ item }}"
+      permanent: yes
+      state: enabled
+    register: reload_fw
+    become: true
+    loop:
+      - "http"
+      - "https"
+
+  - name: "Setup base httpd port"
+    lineinfile:
+      path: "/etc/httpd/conf/httpd.conf"
+      regexp: "Listen 80"
+      line: "Listen 8080"
+
+  - name: "Set HTTPD SELinux settings"
+    ansible.posix.seboolean:
+      name: httpd_read_user_content
+      state: yes
+      persistent: yes
+
+  - name: "Start and enable HTTPD"
+    systemd:
+      name: httpd
+      state: restarted
+      enabled: true
+    become: true
+
+  - name: "Permit HTTPD firewall ports"
+    firewalld:
+      port: "8080/tcp"
+      permanent: yes
+      state: enabled
+    register: reload_fw
+    become: true
+
+  - name: "Test local DNS resolution"
+    changed_when: false
+    command:
+      cmd: "curl localhost:8080"
+
+  - name: "Setup OpenShift download directory"
+    file:
+      state: directory
+      path: "/tmp/openshift" #"{{ item.dest }}"
+    #loop: "openshift_tars"
+
+  - name: "Download OpenShift Installer and Client"
+    unarchive:
+      src: "{{ item.src }}"
+      dest: "/tmp/openshift" #"{{ item.dest }}"
+      mode: '0440'
+    loop: "openshift_tars"
+
+  - name: "Copy binaries to /usr/local/bin"
+    copy:
+      src: "{{ item }}"
+      dest: "/usr/local/bin/"
+      remote_src: yes
+    loop:
+      - kubectl
+      - oc
+      - openshift-install
+
+  - name: "Test OC binaries"
+    changed_when: false
+    command:
+      cmd: "{{ item }}"
+    loop:
+      - "oc version"
+      - "openshift-install version"

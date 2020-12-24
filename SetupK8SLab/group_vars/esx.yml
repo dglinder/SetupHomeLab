@@ -1,0 +1,158 @@
+vm_info:
+  guest_user: "root"
+  guest_passwd: "123NewS!@#"
+  guest_ssh:  "22"
+
+datastore: "datastore1"
+vlan_id: 20
+vswitch: "vSwitch0"
+home_network: "VM Network"
+okd4_network: "OKD"
+
+# httpd_ip: "192.168.65.20"
+#httpd_port: "80"
+
+bootstrap_info:
+  isoname:   "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  kickstart_file: "bootstrap.ks"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+
+fwall_info:
+  isoname:   "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  ip_address: "192.168.65.141"
+
+services_info:
+  isoname:   "[datastore1] isos/CentOS-8.2.2004-x86_64-dvd1.iso"
+  # isoname:   "[datastore1] isos/TestCustomIso/custom-fedora-coreos-32.20200824.3.0-live.x86_64.iso"
+  ip_address: "192.168.65.140"
+  iso_label: "CentOS-8-2-2004-x86_64-dvd"
+  kickstart_file: "services.ks"
+
+control_plane_info:
+  isoname:   "[datastore1] isos/TestCustomIso/custom-fedora-coreos-32.20200824.3.0-live.x86_64.iso"
+
+compute_info:
+  isoname:   "[datastore1] isos/TestCustomIso/custom-fedora-coreos-32.20200824.3.0-live.x86_64.iso"
+
+services_vms:
+  - hostname:  "okd4-services"
+    def_gw:    "192.168.65.1"
+    dns:       "192.168.65.7"
+    ram_mb:    "4096"    # MB
+    cpus:      "4"       # vCPUs
+    disk_size: "100"     # GB
+    networks:
+      # The first in this list is the NIC connected
+      # to the normal network.
+      - ipaddress: "192.168.65.140"
+        nicname:   "ens192"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:01:10"
+        net_loc:   "VM Network"
+      - ipaddress: "192.168.1.210"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:01:10"
+        net_loc:   "OKD"
+
+bootstrap_vms:
+  - hostname:  "okd4-bootstrap"
+    def_gw:    "192.168.65.1"
+    ram_mb:    "16384"   # MB
+    cpus:      "4"       # vCPUs
+    disk_size: "120"     # GB
+    networks:
+      - ipaddress: "192.168.65.200"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:02:d0"
+        net_loc:   "VM Network"
+      - ipaddress: "192.168.1.200"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:01:cd"
+        net_loc:   "OKD"
+
+fwall_vms:
+  - hostname:  "okd4-pfsense"
+    def_gw:    "192.168.65.1"
+    ram_mb:    "1024"    # MB
+    cpus:      "1"       # vCPUs
+    disk_size: "8"       # GB
+    networks:
+      - ipaddress: "192.168.65.141"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:02:11"
+        net_loc:   "VM Network"
+      - ipaddress: "192.168.1.200"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:01:00"
+        net_loc:   "OKD"
+
+control_plane_vms:
+  - hostname:  "okd4-control-plane-0"
+    def_gw:    "192.168.1.1"
+    ram_mb:    "16384"   # MB
+    cpus:      "4"       # vCPUs
+    disk_size: "120"     # GB
+    networks:
+      - ipaddress: "192.168.1.201"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:01:01"
+        net_loc:   "OKD"
+
+  - hostname:  "okd4-control-plane-1"
+    def_gw:    "192.168.1.1"
+    ram_mb:    "16384"   # MB
+    cpus:      "4"       # vCPUs
+    disk_size: "120"     # GB
+    isoname:   "[datastore1] isos/TestCustomIso/custom-fedora-coreos-32.20200824.3.0-live.x86_64.iso"
+    networks:
+      - ipaddress: "192.168.1.202"
+        bitmask:   "24"
+        netmask:   "255.255.255.0"
+        macaddr:   "00:50:56:01:01:02"
+        net_loc:   "OKD"
+
+  - hostname:  "okd4-control-plane-2"
+    def_gw:    "192.168.1.1"
+    ram_mb:    "16384"   # MB
+    cpus:      "4"       # vCPUs
+    disk_size: "120"     # GB
+    isoname:   "[datastore1] isos/TestCustomIso/custom-fedora-coreos-32.20200824.3.0-live.x86_64.iso"
+    networks:
+      - ipaddress: "192.168.1.203"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:01:03"
+        net_loc:   "OKD"
+
+compute_vms:
+  - hostname:  "okd4-compute-0"
+    def_gw:    "192.168.1.1"
+    ram_mb:    "16384"   # MB
+    cpus:      "4"       # vCPUs
+    disk_size: "120"     # GB
+    networks:
+      - ipaddress: "192.168.1.204"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:01:04"
+        net_loc:   "OKD"
+
+  - hostname:  "okd4-compute-1"
+    def_gw:    "192.168.1.1"
+    ram_mb:    "16384"   # MB
+    cpus:      "4"       # vCPUs
+    disk_size: "120"     # GB
+    isoname:   "[datastore1] isos/TestCustomIso/custom-fedora-coreos-32.20200824.3.0-live.x86_64.iso"
+    networks:
+      - ipaddress: "192.168.1.205"
+        netmask:   "255.255.255.0"
+        bitmask:   "24"
+        macaddr:   "00:50:56:01:01:05"
+        net_loc:   "OKD"
