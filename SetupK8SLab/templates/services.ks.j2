@@ -1,0 +1,103 @@
+install
+cdrom
+lang en_US.UTF-8
+keyboard us
+network --bootproto=static --device={{ item.nics[0].mac }} --ip={{ item.nics[0].ip }} --netmask={{ item.nics[0].netmask }} --gateway={{ item.defgw }} --nameserver={{ item.dns }} --hostname {{ item.name }}
+{% if item.nics[1].ip is defined %}
+network --bootproto=static --device={{ item.nics[1].mac }} --ip={{ item.nics[1].ip }} --netmask={{ item.nics[1].netmask }} --gateway={{ item.defgw }} --nameserver={{ item.dns }} --hostname {{ item.name }}
+{% endif %}
+rootpw {{ root_passwd }}
+firewall --disabled
+selinux --permissive
+timezone UTC
+bootloader --location=mbr
+text
+skipx
+zerombr
+clearpart --all --initlabel
+autopart
+auth --enableshadow --passalgo=sha512 --kickstart
+firstboot --disabled
+eula --agreed
+services --enabled=NetworkManager,sshd
+user --name=vagrant --plaintext --password=vagrant --groups=wheel
+sshkey --username=vagrant "{{ initial_sshkey }}"
+sshkey --username=root "{{ initial_sshkey }}"
+reboot
+
+%packages --ignoremissing --excludedocs
+@Base
+@Core
+@Development Tools
+openssh-clients
+sudo
+openssl-devel
+readline-devel
+zlib-devel
+kernel-headers
+kernel-devel
+net-tools
+vim
+wget
+curl
+rsync
+
+# unnecessary firmware
+-aic94xx-firmware
+-atmel-firmware
+-b43-openfwwf
+-bfa-firmware
+-ipw2100-firmware
+-ipw2200-firmware
+-ivtv-firmware
+-iwl100-firmware
+-iwl105-firmware
+-iwl135-firmware
+-iwl1000-firmware
+-iwl3945-firmware
+-iwl4965-firmware
+-iwl5000-firmware
+-iwl5150-firmware
+-iwl6000-firmware
+-iwl6000g2a-firmware
+-iwl6050-firmware
+-iwl7260-firmware
+-iwl3160-firmware
+-iwl2030-firmware
+-iwl2000-firmware
+-libertas-usb8388-firmware
+-ql2100-firmware
+-ql2200-firmware
+-ql23xx-firmware
+-ql2400-firmware
+-ql2500-firmware
+-rt61pci-firmware
+-rt73usb-firmware
+-xorg-x11-drv-ati-firmware
+-zd1211-firmware
+%end
+
+{#
+%post --interpreter=/bin/bash --log=/root/ks-post02.log
+date +"%Y-%m-%d_%H:%M:%S - Kickstart-installed Red Hat Linux"
+
+date +"%Y-%m-%d_%H:%M:%S - Setting hostname to {{ item.name }}"
+hostnamectl set-hostname {{ item.name }}
+
+date +"%Y-%m-%d_%H:%M:%S - Updating all packages"
+yum update -y
+
+date +"%Y-%m-%d_%H:%M:%S - Update root certs"
+wget -O/etc/pki/tls/certs/ca-bundle.crt http://curl.haxx.se/ca/cacert.pem
+
+date +"%Y-%m-%d_%H:%M:%S - Setup sudo for vagrant user"
+yum install -y sudo
+echo "vagrant        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers.d/vagrant
+sed -i "s/^.*requiretty/#Defaults requiretty/" /etc/sudoers
+
+date +"%Y-%m-%d_%H:%M:%S - Run yum clean all"
+yum clean all
+
+date +"%Y-%m-%d_%H:%M:%S - Kickstart post section completed"
+%end
+#}

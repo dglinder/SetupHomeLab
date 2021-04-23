@@ -1,0 +1,46 @@
+okd_network: 192.168.65.0/24
+okd_named_db: 192.168.65
+named_zone_db: 65.168.192
+okd_domain: "okd.local"
+okd_bins:
+  - '/tmp/openshift-client-linux/kubectl'
+  - '/tmp/openshift-client-linux/oc'
+  - '/tmp/openshift-install-linux/openshift-install'
+
+okd_files:
+  - {
+    src_url: 'https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-04-180756/openshift-client-linux-4.5.0-0.okd-2020-09-04-180756.tar.gz',
+    dest_name: 'openshift-client-linux.tar.gz',
+    dest_dir:  'openshift-client-linux',
+    key_file: 'kubectl',
+    hash: 'sha256:b70e7bbee507802a414e0c7ca50f9edaf500c078370e31a3e2e38aa702c34947'
+    }
+  - {
+    src_url: 'https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-09-04-180756/openshift-install-linux-4.5.0-0.okd-2020-09-04-180756.tar.gz',
+    dest_name: 'openshift-install-linux.tar.gz',
+    dest_dir:  'openshift-install-linux',
+    key_file: 'openshift-install',
+    hash: 'sha256:742e47bd3b09e2338158f4a10c16ec596221edde6cb7224de38634e6a6cf2c7b'
+    }
+
+fcos_files:
+  - {
+    src_url: 'https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/32.20200824.3.0/x86_64/fedora-coreos-32.20200824.3.0-metal.x86_64.raw.xz',
+    dest_path: '/var/www/html/okd4/fcos.raw.xz',
+    hash: 'sha256:f536a4d7442534e200935372af3786f3c45918f0ddd682a43602457059f52795'
+    }
+  - {
+    src_url: 'https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/32.20200824.3.0/x86_64/fedora-coreos-32.20200824.3.0-metal.x86_64.raw.xz.sig',
+    dest_path: '/var/www/html/okd4/fcos.raw.xz.sig',
+    hash: 'sha256:ac99befb31b6dad38efd62e0680b9c6391342ff5bffed8f5fb80480721d14f7c'
+    }
+
+fcos_isos:
+  - {
+    hash: 'sha256:b45e345f33e3ba22bfff5b21b30a371247864c832220a54b143c454078886e4c',
+    src_url: 'https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/32.20200824.3.0/x86_64/fedora-coreos-32.20200824.3.0-live.x86_64.iso'
+    }
+  - {
+    hash: 'sha256:0b8f030c7e83873eb73d617d7e87b60b3286b733bec868b00d417ccd62c27fd7',
+    src_url: 'https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/32.20200824.3.0/x86_64/fedora-coreos-32.20200824.3.0-vmware.x86_64.ova'
+    }
