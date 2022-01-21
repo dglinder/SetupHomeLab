@@ -63,15 +63,22 @@
           #    with_items: '{{ (ansible_mounts.1.options.split(",") + ["noquota"]) | unique | join(",") }}'
 
   - set_fact:
-      myflag: 'noexec'
+      myflag: 'nodev'
 
-      #  - name: "Show mounts"
-      #    debug:
-      #      msg: "Details of {{ item }} - {{ (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item)).0.options }}"
-      #    with_items:
-      #    - mount01
-      #    - mount02
-      #    when: "'{{myflag}}' not in (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item)).0.options"
+  - name: "Ensure {{myflag}} flag"
+    lineinfile:
+     path: /etc/fstab2
+     regexp: '(\S+\s+\S*/tmp/mounts/{{item}}\S*\s+\S+\s+)(\S+)(\s+\S+\s+\S+)'
+     line: '\1\2,{{myflag}}\3'
+     backrefs: yes
+     backup: yes
+    with_items:
+    - mount01
+    - mount02
+    when: "'{{myflag}}' not in (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item)).0.options"
+
+  - set_fact:
+      myflag: 'noexec'
 
   - name: "Ensure {{myflag}} flag"
     lineinfile:
