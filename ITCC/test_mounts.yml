@@ -62,7 +62,8 @@
           #      msg: "Found: {{ item }}"
           #    with_items: '{{ (ansible_mounts.1.options.split(",") + ["noquota"]) | unique | join(",") }}'
 
-  - set_fact:
+  - name: "Setup some of the mount flag variables"
+    set_fact:
       mount_flags:
       - 'nodev'
       - 'noexec'
@@ -79,4 +80,5 @@
      backup: yes
     when: "'{{ item.1 }}' not in (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item.0)).0.options"
     loop: "{{ mount_point|product(mount_flags)|list }}"
+
 
