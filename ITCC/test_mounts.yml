@@ -1,0 +1,88 @@
+#!/usr/bin/env ansible-playbook
+#
+# for X in 01 02 ; do dd if=/dev/zero of=/tmp/mount${X} bs=1M count=256 ; done
+# for X in 01 02 ; do sudo mkfs.xfs /tmp/mount${X} ; done
+# for X in 01 02 ; do sudo mount /tmp/mounts/mount${X} ; done
+#
+# Check:
+#   ls -altr /tmp/m* ; egrep mount0 /etc/fstab ; mount | grep mount0
+# Result:
+#   /tmp/mount01 on /tmp/mounts/mount01 type xfs (rw,nodev,noatime,seclabel,attr2,inode64,noquota)
+#   /tmp/mount02 on /tmp/mounts/mount02 type xfs (rw,noexec,relatime,seclabel,attr2,inode64,noquota)
+
+#
+---
+- hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+          #  - name: "Add nodev to /tmp/mounts/mount*"
+          #    mount:
+          #      path: '/tmp/mounts/{{ item }}'
+          #      src: '/tmp/{{ item }}'
+          #      fstype: xfs
+          #      #opts: 'defaults,noatime,nodev'
+          #      opts: 'nodev'
+          #      state: present
+          #      passno: '0'
+          #      dump: '0'
+          #      backup: yes
+          #    with_items:
+          #    - mount01
+          #    - mount02
+
+          #  - name: "Convert string to list"
+          #    debug:
+          #      msg: "Found: {{ item }}"
+          #    with_items: '{{ ansible_mounts.1.options.split(",") }}'
+          #
+          #  - name: "Append new to list"
+          #    debug:
+          #      msg: "Found: {{ item }}"
+          #    with_items: '{{ ansible_mounts.1.options.split(",") + ["newopt"] }}'
+          #
+          #  - name: "Append duplicate to list"
+          #    debug:
+          #      msg: "Found: {{ item }}"
+          #    with_items: '{{ ansible_mounts.1.options.split(",") + ["noquota"] }}'
+          #
+          #  - name: "Append duplicate to list then unique"
+          #    debug:
+          #      msg: "Found: {{ item }}"
+          #    with_items: '{{ (ansible_mounts.1.options.split(",") + ["noquota"]) | unique }}'
+          #
+          #  - name: "Convert back to CSV with a new entry"
+          #    debug:
+          #      msg: "Found: {{ item }}"
+          #    with_items: '{{ (ansible_mounts.1.options.split(",") + ["aNewEntry"]) | unique | join(",") }}'
+          #
+          #  - name: "Convert back to CSV with a dupe"
+          #    debug:
+          #      msg: "Found: {{ item }}"
+          #    with_items: '{{ (ansible_mounts.1.options.split(",") + ["noquota"]) | unique | join(",") }}'
+
+  - set_fact:
+      myflag: 'noexec'
+
+      #  - name: "Show mounts"
+      #    debug:
+      #      msg: "Details of {{ item }} - {{ (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item)).0.options }}"
+      #    with_items:
+      #    - mount01
+      #    - mount02
+      #    when: "'{{myflag}}' not in (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item)).0.options"
+
+  - name: "Ensure {{myflag}} flag"
+    lineinfile:
+     path: /etc/fstab2
+     regexp: '(\S+\s+\S*/tmp/mounts/{{item}}\S*\s+\S+\s+)(\S+)(\s+\S+\s+\S+)'
+     line: '\1\2,{{myflag}}\3'
+     backrefs: yes
+     backup: yes
+    with_items:
+    - mount01
+    - mount02
+    when: "'{{myflag}}' not in (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item)).0.options"
+
+
