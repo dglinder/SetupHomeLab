@@ -63,33 +63,20 @@
           #    with_items: '{{ (ansible_mounts.1.options.split(",") + ["noquota"]) | unique | join(",") }}'
 
   - set_fact:
-      myflag: 'nodev'
+      mount_flags:
+      - 'nodev'
+      - 'noexec'
+      mount_point:
+      - 'mount01'
+      - 'mount02'
 
-  - name: "Ensure {{myflag}} flag"
+  - name: "Ensure mount flags are set"
     lineinfile:
      path: /etc/fstab2
-     regexp: '(\S+\s+\S*/tmp/mounts/{{item}}\S*\s+\S+\s+)(\S+)(\s+\S+\s+\S+)'
-     line: '\1\2,{{myflag}}\3'
+     regexp: '(\S+\s+\S*/tmp/mounts/{{ item.0 }}\S*\s+\S+\s+)(\S+)(\s+\S+\s+\S+)'
+     line: '\1\2,{{ item.1 }}\3'
      backrefs: yes
      backup: yes
-    with_items:
-    - mount01
-    - mount02
-    when: "'{{myflag}}' not in (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item)).0.options"
-
-  - set_fact:
-      myflag: 'noexec'
-
-  - name: "Ensure {{myflag}} flag"
-    lineinfile:
-     path: /etc/fstab2
-     regexp: '(\S+\s+\S*/tmp/mounts/{{item}}\S*\s+\S+\s+)(\S+)(\s+\S+\s+\S+)'
-     line: '\1\2,{{myflag}}\3'
-     backrefs: yes
-     backup: yes
-    with_items:
-    - mount01
-    - mount02
-    when: "'{{myflag}}' not in (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item)).0.options"
-
+    when: "'{{ item.1 }}' not in (ansible_mounts|selectattr('mount', 'equalto', '/tmp/mounts/' ~ item.0)).0.options"
+    loop: "{{ mount_point|product(mount_flags)|list }}"
 
