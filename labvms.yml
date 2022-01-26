@@ -1,0 +1,67 @@
+#!/usr/bin/env ansible-playbook
+#
+# Examples to call:
+#   ./labvms.yml -i inventory.ini
+#
+# On each VM power them up, connect to the .22 address then run these:
+# NUM=3
+# nmcli con mod ens33 ipv4.address 192.168.65.2${NUM}/24 && hostnamectl set-hostname ansvm${NUM} && reboot
+#
+---
+- hosts: all
+  gather_facts: true
+  become: false
+
+  vars:
+    ssh_users:
+    - name: 'dan'
+      key: 'id_ed25519.pub'
+
+  tasks:
+  # - name: 'Ensure a local SSH key is configured'
+  #   debug:
+  #     var: ssh_users
+  #   delegate_to: localhost
+
+  - name: 'Setup .ssh folder'
+    file:
+      path: '{{ lookup("env","HOME") + "/.ssh/" }}'
+      state: directory
+      mode: 0700
+
+  - name: 'Setup SSH key on remote systems so local $USER can SSH in without password'
+    authorized_key:
+      user: '{{ item.name }}'
+      key: '{{ lookup("file", lookup("env", "HOME") + "/.ssh/" + item.key ) }}'
+      state: present
+    loop: '{{ ssh_users }}'
+
+  - name: 'Adjust so $USER on remote system can "sudo" without password.yml'
+    lineinfile:
+      path: '/etc/sudoers.d/{{ item.name }}'
+      state: present
+      line:  '{{ item.name }} ALL=(ALL) NOPASSWD: ALL'
+      create: True
+      mode: 0640
+      owner: root
+      group: root
+      validate: '/usr/sbin/visudo -cf %s'
+    become: true
+    become_method: su
+    loop: '{{ ssh_users }}'
+
+- hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+  - name: 'Patch up the systems'
+    package:
+      name: '*'
+      state: latest
+    notify: reboot
+
+  handlers:
+  - name: reboot
+    reboot:
+      msg: "Reboot initiated by Ansible" # not required. Message to display to users before reboot.
