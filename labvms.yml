@@ -2,27 +2,28 @@
 #
 # Examples to call:
 #   ./labvms.yml -i inventory.ini
+#   ./labvms.yml -i inventory.ini -k -K -i ~/.ssh/id_ed25519 
+#   ansible all -m ping -i inventory.ini -i ~/.ssh/id_ed25519 --limit ansvm1.lab.linder.org  -k -K
 #
 # On each VM power them up, connect to the .22 address then run these:
 # NUM=3
 # nmcli con mod ens33 ipv4.address 192.168.65.2${NUM}/24 && hostnamectl set-hostname ansvm${NUM} && reboot
 #
 ---
-- hosts: all
+- name: "Do things on all systems"
+  hosts: all
   gather_facts: true
-  become: false
 
   vars:
+    rh_sub_info:
+      name: 'dan-5'
+      password: 'FRNJA3tSu&r7!63PDV^g'
+
     ssh_users:
     - name: 'dan'
       key: 'id_ed25519.pub'
 
   tasks:
-  # - name: 'Ensure a local SSH key is configured'
-  #   debug:
-  #     var: ssh_users
-  #   delegate_to: localhost
-
   - name: 'Setup .ssh folder'
     file:
       path: '{{ lookup("env","HOME") + "/.ssh/" }}'
@@ -30,7 +31,7 @@
       mode: 0700
 
   - name: 'Setup SSH key on remote systems so local $USER can SSH in without password'
-    authorized_key:
+    ansible.posix.authorized_key:
       user: '{{ item.name }}'
       key: '{{ lookup("file", lookup("env", "HOME") + "/.ssh/" + item.key ) }}'
       state: present
@@ -47,19 +48,37 @@
       group: root
       validate: '/usr/sbin/visudo -cf %s'
     become: true
-    become_method: su
+    #become_method: su
     loop: '{{ ssh_users }}'
 
-- hosts: all
-  gather_facts: true
-  become: true
+  - name: "Ensure setup on RHEL repositories"
+    # subscription-manager register --username dan-5 --password 'FRNJA3tSu&r7!63PDV^g' --auto-attach
+    community.general.redhat_subscription:
+      state: present
+      username: '{{ rh_sub_info.name }}' #dan-5
+      password: '{{ rh_sub_info.password }}' #'FRNJA3tSu&r7!63PDV^g'
+      force_register: true
+      auto_attach: true
+    become: true
 
-  tasks:
+  - name: "Set hostname"
+    ansible.builtin.hostname:
+      name: '{{ inventory_hostname }}'
+
+  - name: "Fully patch package management tools"
+    package:
+      name:
+      - python-rhsm
+      - subscription-manager
+      state: latest
+    become: true
+
   - name: 'Patch up the systems'
     package:
       name: '*'
       state: latest
     notify: reboot
+    become: true
 
   handlers:
   - name: reboot
