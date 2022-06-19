@@ -6,12 +6,29 @@ set -e
 # How long to delay before rescanning for inventory
 DEL=5
 
+set +e
+TFBIN=$(which terraform 2>/dev/null)
+set -e
+if [[ "${TFBIN}" == "" ]] ; then
+  echo "Can't find terraform binary. Exiting."
+  exit 1
+fi
+
+set +e
+OVFBIN=$(which ovftool 2>/dev/null)
+set -e
+if [[ "${OVFBIN}" == "" ]] ; then
+  echo "Can't find ovftool binary. Exiting."
+  exit 1
+fi
+
 echo "Starting: $(date)"
 terraform init
 terraform plan
 terraform destroy -auto-approve
-banner 'READY!'
-sleep 5
+
+figlet 'READY!'
+
 echo "Starting build: $(date)"
 time terraform apply -auto-approve
 echo "Inventory right after terraform apply:"
@@ -20,7 +37,8 @@ sleep ${DEL}
 time terraform apply -auto-approve
 echo "Inventory after ${DEL} second delay:"
 cat -n inventory
-banner 'Done.'
+
+figlet 'Done.'
 
 echo "Starting setup: $(date)"
 time ansible-playbook -i inventory ./setupokd4.yml -u root

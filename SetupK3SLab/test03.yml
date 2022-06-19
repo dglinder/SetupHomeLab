@@ -160,6 +160,7 @@
       ansible_user: root
       ansible_password: "{{ root_passwd }}"
       groups: "{{ item.in_group }}"
+      foovar: "Some_data"
     loop: '{{ vminfo }}'
     loop_control:
       label: "{{ item.name }}"

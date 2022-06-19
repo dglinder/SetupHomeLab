@@ -1,6 +1,6 @@
 my_esxi_hostname = "esx.lab.linder.org"
 my_esxi_username = "root"
-my_esxi_password = "1234NewS!@#$"
+my_esxi_password = "N12Um34En56tI78ON"
 
 datastore = "datastore1" 
 vlan_id = 20

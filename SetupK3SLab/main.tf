@@ -1,6 +1,8 @@
 # Setup okd4 lab VMs
 # After this runs, use the inventory to setup with home lab script:
-# ansible-playbook -i inventory ~/SetupHomeLab/main.yml -u root
+#   ansible-playbook -i inventory ~/SetupHomeLab/main.yml -u root
+# This uses the Terraform ESXi provider
+#   https://github.com/josenk/terraform-provider-esxi
 
 terraform {
   required_version = ">= 0.13"

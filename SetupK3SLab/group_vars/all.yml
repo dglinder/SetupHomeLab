@@ -77,7 +77,7 @@ vminfo:
     size: 8
     datastore: "datastore1"
 
-vminfo2:
+# vminfo2:
 - name: "okd4-bootstrap"
   guest_id: "rhel8_64Guest"
   in_group: [ "bootstrap", "newvms" ]
@@ -100,7 +100,7 @@ vminfo2:
     size: 120
     datastore: "datastore1"
 
-vminfo2:
+# vminfo2:
 - name: "okd4-control-plane-1"
   guest_id: "rhel8_64Guest"
   in_group: [ "control-plane", "newvms" ]
@@ -114,7 +114,7 @@ vminfo2:
   nics:
   - name: "OKD"
     mac: "00:50:56:01:01:13"
-    address: "192.168.1.201"
+    ip: "192.168.1.201"
     netmask: "255.255.255.0"
   CPUs: 4
   RAM: 16384
@@ -135,7 +135,7 @@ vminfo2:
   nics:
   - name: "OKD"
     mac: "00:50:56:01:01:14"
-    address: "192.168.1.202"
+    ip: "192.168.1.202"
     netmask: "255.255.255.0"
   CPUs: 4
   RAM: 16384
@@ -156,7 +156,7 @@ vminfo2:
   nics:
   - name: "OKD"
     mac: "00:50:56:01:01:15"
-    address: "192.168.1.203"
+    ip: "192.168.1.203"
     netmask: "255.255.255.0"
   CPUs: 4
   RAM: 16384
@@ -177,7 +177,7 @@ vminfo2:
   nics:
   - name: "OKD"
     mac: "00:50:56:01:01:16"
-    address: "192.168.1.204"
+    ip: "192.168.1.204"
     netmask: "255.255.255.0"
   CPUs: 4
   RAM: 16384
@@ -198,7 +198,7 @@ vminfo2:
   nics:
   - name: "OKD"
     mac: "00:50:56:01:01:17"
-    address: "192.168.1.205"
+    ip: "192.168.1.205"
     netmask: "255.255.255.0"
   CPUs: 4
   RAM: 16384
