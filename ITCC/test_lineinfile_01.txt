@@ -1,0 +1,3 @@
+# a test file for test_lineinfile_01.yml
+user = apache
+group = apache

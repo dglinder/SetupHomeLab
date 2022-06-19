@@ -1,0 +1,40 @@
+#!/usr/bin/env ansible-playbook
+#             "ipv4": {
+#                "address": "192.168.1.100",
+#                "broadcast": "192.168.65.255",
+#                "netmask": "255.255.255.0",
+#                "network": "192.168.1.0"
+#            },
+#            "ipv6": [
+#                {
+#                    "address": "::0.101.1.35",
+#                    "prefix": "64",
+#                    "scope": "global"
+#                },
+#                {
+#                    "address": "fe80::9163:306b:459b:49ce",
+#                    "prefix": "64",
+#                    "scope": "link"
+#                }
+#            ],
+---
+- hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+  - name: "Show ipv4 info"
+    debug:
+      var: ansible_ens33.ipv4
+
+  - name: "Show ipv6 info"
+    debug:
+      var: ansible_ens33.ipv6
+
+  - name: "Show ipv4 address info"
+    debug:
+      var: ansible_ens33.ipv4.address
+
+  - name: "Show ipv6 address info for element 0"
+    debug:
+      var: ansible_ens33.ipv6.0.address

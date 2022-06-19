@@ -1,0 +1,19 @@
+#
+# Setup:
+# printf "# a test file for test_lineinfile_01.yml\nuser = apache\ngroup = apache\n" > test_lineinfile_01.txt
+#
+---
+- hosts: all
+  gather_facts: true
+
+  tasks:
+  - name: Update file
+    lineinfile:
+      path: "test_lineinfile_01.txt"
+      regexp: "{{item.regexp}}"
+      line: "{{item.line}}"
+    loop:
+      - {'regexp': "user = (.*)?", 'line': "user = nginx"}
+      - {'regexp': "group = (.*)?", 'line': "group = nginx"}
+
+
