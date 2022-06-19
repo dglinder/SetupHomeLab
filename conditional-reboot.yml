@@ -1,0 +1,27 @@
+---
+- hosts: ansvm1
+  gather_facts: true
+
+  tasks:
+  - name: Get services
+    service_facts:
+
+  - name: Show firewalld service on VM1
+    debug:
+      msg: 'Services on VM1 as seen on VM1: {{ ansible_facts.services["firewalld.service"] }}'
+
+- hosts: ansvm2
+  gather_facts: true
+
+  tasks:
+  - name: Show services on VM2
+    debug:
+      msg: "Services on VM1 as seen on VM2: {{ hostvars['ansvm1']['ansible_facts']['services']['firewalld.service'] }}"
+
+  - name: Reboot VM2 if needed
+    debug:
+      msg: 'Reboot VM2'
+    when:
+      - hostvars['ansvm1']['ansible_facts']['services']['firewalld.service']['state'] == 'stopped'
+
+
