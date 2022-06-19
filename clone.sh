@@ -1,17 +1,16 @@
 #!/bin/sh
-#
-# Description: Quick(ish) way to clone a VM on an ESXi host from the
-#   underlying Unix shell prompt.
-#
-# NOTE: This does NOT adjust the IP addresses, nor the MAC addresses so
-#   there is potential for conflicts between the source and the cloned VMs.
-#
 # Usage: clone.sh SOURCE_DIR DEST_DIR
-#
 # Where:
 #   SOURCE_DIR : The directory containing the VM to clone FROM
 #   DEST_DIR   : The directory to clone into.
-#set -x
+#
+# Alternate usage in a loop:
+#    for X in 2 3 4 5 6 7 8 ; do
+#      (./clone.sh ansvm0b ansvm${X} 2>&1 | tee clone.ansvm${X}.log ) & sleep 30
+#    done
+# Then use "watch -n 30 'tail -10 clone.ansvm*.log'" to monitor progoress.
+#
+#set -x  # Show commands as they are run.
 set -e  # Exit on any error
 set -u  # Exit on any undefined variable
 
@@ -35,10 +34,13 @@ for X in `ls -1 *$START*` ; do
 done
 
 echo "Adjusting files in $END"
-for F in $END.nvram $END.vmdk $END.vmsd $END.vmx ; do
+#for F in $END.nvram $END.vmdk $END.vmsd $END.vmx ; do
+#for F in ${END}*.nvram ${END}*.vmdk ${END}*.vmsd ${END}*.vmx ${END}*.vmsn; do
+#for F in ${END}*.nvram ${END}*.vmsd ${END}*.vmx ${END}*.vmsn; do
+for F in $(find . -type f -size -2048k) ; do
   echo "Fixing $F"
-  sed -i "s/$START/$END/g" $F
+  sed -i "/$START/ s/$START/$END/g" $F
+  sleep 1
 done
 
 cd -
-
