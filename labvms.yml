@@ -2,8 +2,8 @@
 #
 # Examples to call:
 #   ./labvms.yml -i inventory.ini
-#   ./labvms.yml -i inventory.ini -k -K -i ~/.ssh/id_ed25519 
-#   ansible all -m ping -i inventory.ini -i ~/.ssh/id_ed25519 --limit ansvm1.lab.linder.org  -k -K
+#   ./labvms.yml -i inventory.ini -k -K --private-key ~/.ssh/id_ed25519 
+#   ansible all -m ping -i inventory.ini --private-key ~/.ssh/id_ed25519 --limit ansvm1.lab.linder.org  -k -K
 #
 # On each VM power them up, connect to the .22 address then run these:
 # NUM=3
@@ -16,7 +16,7 @@
 
   vars:
     rh_sub_info:
-      name: 'dan-522'
+      name: 'dan-5'
       password: 'FRNJA3tSu&r7!63PDV^g'
 
     ssh_users:
@@ -67,7 +67,7 @@
         role: "Red Hat Enterprise Linux Server"
         service_level_agreement: "Self-Support"
         sync: yes
-      #force_register: true
+        #force_register: true
       auto_attach: true
     become: true
 
