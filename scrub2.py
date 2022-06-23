@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Example to test:
+#   rm -rf testscrub/ && mkdir testscrub/ && cp simple001.log testscrub/ && pushd testscrub/ && ../scrub2.py "${USER} <dan2linder.org>" simple001.log ; popd ; cat -n testscrub/dan-*log
+$
 import re
 import os
 import sys
