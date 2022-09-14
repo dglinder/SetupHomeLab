@@ -83,3 +83,10 @@
     reboot:
       msg: "Reboot initiated by Ansible" # not required. Message to display to users before reboot.
     become: true
+    when:
+    -  not ansible_env['SSH_CLIENT'] | regex_search(ansible_facts.all_ipv4_addresses[0])
+    -  not ansible_env['SSH_CLIENT'] | regex_search(ansible_facts.all_ipv4_addresses[1] | default(ansible_facts.all_ipv4_addresses[0]))
+    -  not ansible_env['SSH_CLIENT'] | regex_search(ansible_facts.all_ipv4_addresses[2] | default(ansible_facts.all_ipv4_addresses[0]))
+    -  not ansible_env['SSH_CLIENT'] | regex_search(ansible_facts.all_ipv4_addresses[3] | default(ansible_facts.all_ipv4_addresses[0]))
+
+
