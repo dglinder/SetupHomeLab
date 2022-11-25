@@ -32,6 +32,10 @@
     ssh_users:
     - name: 'dan'
       key: 'id_ed25519.pub'
+ 
+    common_packages:
+      - "vim"
+      - "yum-utils"
 
   tasks:
   - name: 'Setup .ssh folder'
