@@ -82,6 +82,11 @@
         sync: yes
         #force_register: true
       auto_attach: true
+
+  - name: 'Add some handy common packages'
+    package:
+      name: '{{ common_packages }}'
+      state: installed
     become: true
 
   - name: 'Patch up the systems'
