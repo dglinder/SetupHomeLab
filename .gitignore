@@ -7,3 +7,4 @@ terraform.tfstate*
 .vault_password
 SetupK3SLab/inventory.new
 demo_2021A
+.vault_password_file
