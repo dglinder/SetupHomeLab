@@ -1,13 +1,14 @@
 #!/usr/bin/env ansible-playbook
 #
 # Examples to call:
-#   ./labvms.yml -i inventory.ini
-#   ./labvms.yml -i inventory.ini -k -K --private-key ~/.ssh/id_ed25519 
-#   ansible all -m ping -i inventory.ini --private-key ~/.ssh/id_ed25519 --limit ansvm1.lab.linder.org  -k -K
-# ..or with Ansible Navigator:
+#    ansible-navigator run ./labvms.yml -i inventory.ini --vault-id "vault_password.sh" --limit ansvm[1-2].lab.linder.org
+# Or
 #   ansible-navigator run labvms.yml -i inventory.ini --limit anssrv.lab.linder.org, --user dan --private-key ~/.ssh/id_ed25519
 #
-# On each VM power them up, connect to the .22 address then run these:
+# May need to refresh the Collections and Roles:
+#   ansible-galaxy collection install -r collections/requirements -p ./collections
+#
+# On each VM power them up, connect to the .25 address then run these:
 # NUM=3
 # nmcli con mod ens33 ipv4.address 192.168.65.2${NUM}/24 && hostnamectl set-hostname ansvm${NUM} && reboot
 #
