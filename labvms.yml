@@ -39,7 +39,7 @@
   tasks:
   - name: 'Setup .ssh folder'
     file:
-      path: '{{ lookup("env","HOME") + "/.ssh/" }}'
+      path: '/home/{{ ansible_ssh_user }}/.ssh' #'{{ lookup("env","HOME") + "/.ssh/" }}'
       state: directory
       mode: 0700
 
