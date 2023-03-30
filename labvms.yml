@@ -71,7 +71,6 @@
     loop: '{{ ssh_users }}'
 
   - name: "Ensure Red Hat Subscription setup"
-    # subscription-manager register --username dan-5 --password '[[redacted]]' --auto-attach
     community.general.redhat_subscription:
       state: present
       username: '{{ rh_sub_info.name }}'
@@ -81,7 +80,6 @@
         role: "Red Hat Enterprise Linux Server"
         service_level_agreement: "Self-Support"
         sync: yes
-        #force_register: true
       auto_attach: true
     become: true
 
