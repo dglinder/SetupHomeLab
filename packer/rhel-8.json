@@ -53,7 +53,7 @@
       "iso_checksum": "{{ user `iso_checksum` }}",
       "iso_storage_pool": "synology-nfs-storage",
       "http_directory": "http",
-      "boot_wait": "10s",
+      "boot_wait": "30m",
       "boot_command": [
         "<up><tab> ip=dhcp inst.cmdline inst.ks=http://{{.HTTPIP}}:{{.HTTPPort}}/RHEL8-ks.cfg<enter>"
       ],
