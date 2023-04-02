@@ -1,3 +1,4 @@
+# STATE: Boots ISO, nothing else.
 # Run like this:
 # $ packer init rhel-8.pkr.hcl
 # $ packer build rhel-8.pkr.hcl
