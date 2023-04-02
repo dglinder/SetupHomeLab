@@ -26,28 +26,41 @@ source "proxmox-iso" "rhel8-template" {
   ssh_username         = "root"
   ssh_password         = "packer"
   
-  boot_command = ["<up><tab> ip=dhcp inst.cmdline inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg<wait10><enter>"]
+  #boot_command = ["<up><tab> ip=dhcp inst.cmdline inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg<wait10><enter>"]
+#  iso_storage_pool         = "synology-nfs-storage"
+#  cd_directory  = "http"
+#  cd_files      = [ "./http/*" ]
+#  cd_label      = "cddata"
+  http_directory = "http"
+  boot_command = [
+    "<esc><wait>",
+    "vmlinuz ",
+    " initrd=initrd.img ",
+#    " inst.stage2=hd:LABEL={{ user `ISO_LABEL`}} ",
+    " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg ",
+#    " inst.ks=cdrom:CDLABEL=cddata:RHEL8-ks.cfg ",
+    " <wait10> ",
+    " <enter> "
+  ]
   boot_wait    = "15s"  # Need more, but 30 seconds is good for early testing
   ssh_timeout  = "90s" # Need more, but 30 seconds is good for early testing
   cores        = "2"
   cpu_type     = "kvm64"
   memory                   = "8192"
-  http_directory           = "http"
   os                   = "l26"
-#  disks {
-#    cache_mode        = "none"
-#    disk_size         = "50G"
-#    format            = "qcow2"
-#    storage_pool      = "synology-nfs-storage"
-#    type              = "scsi"
-#  }
+  disks {
+    cache_mode        = "none"
+    disk_size         = "50G"
+    format            = "qcow2"
+    storage_pool      = "synology-nfs-storage"
+    type              = "scsi"
+  }
 ##  efi_config {
 ##    efi_storage_pool  = "synology-nfs-storage"
 ##    efi_type          = "4m"
 ##    pre_enrolled_keys = true
 ##  }
 #  iso_checksum             = "${var.iso_checksum}"
-#  iso_storage_pool         = "synology-nfs-storage"
 #  iso_url                  = "${var.iso_url}"
 #  network_adapters {
 #    bridge = "vmbr0"
