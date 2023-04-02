@@ -26,10 +26,14 @@ source "proxmox-iso" "rhel8-template" {
   ssh_username         = "root"
   ssh_password         = "packer"
   
-#  boot_command = ["<up><tab> ip=dhcp inst.cmdline inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg<enter>"]
-#  boot_wait    = "30m"
-#  cores        = "2"
-#  cpu_type     = "kvm64"
+  boot_command = ["<up><tab> ip=dhcp inst.cmdline inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg<wait10><enter>"]
+  boot_wait    = "15s"  # Need more, but 30 seconds is good for early testing
+  ssh_timeout  = "90s" # Need more, but 30 seconds is good for early testing
+  cores        = "2"
+  cpu_type     = "kvm64"
+  memory                   = "8192"
+  http_directory           = "http"
+  os                   = "l26"
 #  disks {
 #    cache_mode        = "none"
 #    disk_size         = "50G"
@@ -42,24 +46,18 @@ source "proxmox-iso" "rhel8-template" {
 ##    efi_type          = "4m"
 ##    pre_enrolled_keys = true
 ##  }
-#  http_directory           = "http"
-#  insecure_skip_tls_verify = true
 #  iso_checksum             = "${var.iso_checksum}"
 #  iso_storage_pool         = "synology-nfs-storage"
 #  iso_url                  = "${var.iso_url}"
-#  memory                   = "8192"
 #  network_adapters {
 #    bridge = "vmbr0"
 #    model  = "e1000"
 #  }
-#  node                 = "node-rhel-8"
-#  os                   = "l26"
 #  pool                 = "packer_pool"
 #  proxmox_url          = "https://pve1.lab.linder.org:8006/api2/json"
 #  scsi_controller      = "lsi"
 #  sockets              = "1"
 #  ssh_password         = "packer"
-#  ssh_timeout          = "30m"
 #  ssh_username         = "root"
 ##  template_description = "Red Hat Enterprise Linux 8, generated on ${legacy_isotime("2006-01-02T15:04:05Z")}"
 #  template_name        = "template-rhel-8-packer-26a"
