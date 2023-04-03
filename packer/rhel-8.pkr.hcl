@@ -6,7 +6,7 @@
 packer {
   required_plugins {
     proxmox = {
-      version = ">= 1.0.6"
+      version = ">= 1.1.2"
       source  = "github.com/hashicorp/proxmox"
     }
   }
@@ -15,6 +15,11 @@ packer {
 source "proxmox-iso" "rhel8-template" {
   proxmox_url = "https://pve1.lab.linder.org:8006/api2/json"
   insecure_skip_tls_verify = true
+  additional_iso_files {
+    iso_storage_pool = "synology-nfs-storage"
+    cd_label         = "cddata"
+    cd_files         = [ "./http/*" ]
+  }
   username = "root@pam"
   password = "q7-19ezx"
   #token = "c5109ede-0f7c-41#3e-9c69-154bef1dbbf1"
@@ -27,23 +32,18 @@ source "proxmox-iso" "rhel8-template" {
   ssh_password         = "packer"
   
   #boot_command = ["<up><tab> ip=dhcp inst.cmdline inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg<wait10><enter>"]
-#  iso_storage_pool         = "synology-nfs-storage"
-#  cd_directory  = "http"
-#  cd_files      = [ "./http/*" ]
-#  cd_label      = "cddata"
-  http_directory = "http"
   boot_command = [
     "<esc><wait>",
     "vmlinuz ",
     " initrd=initrd.img ",
 #    " inst.stage2=hd:LABEL={{ user `ISO_LABEL`}} ",
-    " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg ",
-#    " inst.ks=cdrom:CDLABEL=cddata:RHEL8-ks.cfg ",
+#    " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/RHEL8-ks.cfg ",
+    " inst.ks=cdrom:CDLABEL=cddata:RHEL8-ks.cfg ",
     " <wait10> ",
     " <enter> "
   ]
   boot_wait    = "15s"  # Need more, but 30 seconds is good for early testing
-  ssh_timeout  = "90s" # Need more, but 30 seconds is good for early testing
+  ssh_timeout  = "120s" # Need more, but 30 seconds is good for early testing
   cores        = "2"
   cpu_type     = "kvm64"
   memory                   = "8192"
@@ -62,10 +62,10 @@ source "proxmox-iso" "rhel8-template" {
 ##  }
 #  iso_checksum             = "${var.iso_checksum}"
 #  iso_url                  = "${var.iso_url}"
-#  network_adapters {
-#    bridge = "vmbr0"
-#    model  = "e1000"
-#  }
+  network_adapters {
+    bridge = "vmbr0"
+    model  = "e1000"
+  }
 #  pool                 = "packer_pool"
 #  proxmox_url          = "https://pve1.lab.linder.org:8006/api2/json"
 #  scsi_controller      = "lsi"
