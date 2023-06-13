@@ -3,6 +3,9 @@ set -u
 set -e
 #set -x
 
+# This will build the base VMs used for the "k32-ansible"
+# playbook: https://github.com/k3s-io/k3s-ansible.git
+
 # How long to delay before rescanning for inventory
 DEL=5
 
