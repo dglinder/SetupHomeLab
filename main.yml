@@ -23,6 +23,11 @@
 # Or
 #   script setup-$(date +%y%m%d-%H%M%S).out -c "./main.yml --extra-vars '@password.yml' --vault-password-file=vault_password"
 #
+# NOTE: This playbook relies on the `rhel-system-roles` for system maintenance.
+# * https://access.redhat.com/articles/3050101
+# * https://www.redhat.com/en/blog/introduction-rhel-system-roles
+# * https://linux-system-roles.github.io/
+# * https://linux-system-roles.github.io/
 ---
 - hosts: all
   gather_facts: true
@@ -75,14 +80,14 @@
       line: "{{ username_on_remote }} ALL=(ALL) NOPASSWD:ALL"
       validate: /usr/sbin/visudo -cf %s
 
-  - name: Setup hostname
-    include_role:
-      name: fqdn
-      apply:
-        become: true
-    vars:
-      fqdn: "{{ inventory_hostname }}"
-      hostname: "{{ inventory_hostname_short }}"
+#  - name: Setup hostname
+#    include_role:
+#      name: fqdn
+#      apply:
+#        become: true
+#    vars:
+#      fqdn: "{{ inventory_hostname }}"
+#      hostname: "{{ inventory_hostname_short }}"
 
   - name: Setup automatic updates
     become: true
