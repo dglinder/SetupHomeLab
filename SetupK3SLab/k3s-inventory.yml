@@ -1,0 +1,23 @@
+---
+k3s_cluster:
+  hosts:
+    kube-0:
+      ansible_user: dan
+      ansible_host: 192.168.65.75
+      #ansible_python_interperter: /usr/bin/python3
+    kube-1:
+      ansible_user: dan
+      ansible_host: 192.168.65.76
+      #ansible_python_interperter: /usr/bin/python3
+    kube-2:
+      ansible_user: dan
+      ansible_host: 192.168.65.77
+      #ansible_python_interperter: /usr/bin/python3
+    kube-3:
+      ansible_user: dan
+      ansible_host: 192.168.65.78
+      #ansible_python_interperter: /usr/bin/python3
+#    kube-4:
+#      ansible_user: dan
+#      ansible_host: 192.168.65.79
+#      #ansible_python_interperter: /usr/bin/python3
